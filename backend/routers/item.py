@@ -1,0 +1,157 @@
+from typing import List
+from fastapi import APIRouter, HTTPException, status
+from sqlmodel import select
+
+from backend.dependencies import SessionDep, CurrentUser, CurrentVendor
+from backend.models import Item, Store, UserType, StoreState
+from backend.schemas import ItemCreate, ItemUpdate, ItemResponse
+
+router = APIRouter(prefix="/api/item", tags=["餐点管理"])
+
+
+@router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
+async def create_item(
+    item_create: ItemCreate, current_vendor: CurrentVendor, session: SessionDep
+):
+    """商家添加餐点信息"""
+    # 验证商家是否拥有该店铺
+    store = session.get(Store, item_create.store_id)
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
+
+    if store.owner_id != current_vendor.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限为该商家添加餐点"
+        )
+
+    # 检查商家是否已通过审核
+    if store.state != StoreState.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="商家信息未通过审核，无法添加餐点",
+        )
+
+    # 创建餐点
+    db_item = Item(**item_create.model_dump(by_alias=True))
+    session.add(db_item)
+    session.commit()
+    session.refresh(db_item)
+    return db_item
+
+
+@router.get("/", response_model=List[ItemResponse])
+async def list_items(
+    session: SessionDep,
+    skip: int = 0,
+    limit: int = 100,
+    store_id: int | None = None,
+    search: str | None = None,
+):
+    """查询餐点列表"""
+    statement = select(Item)
+
+    # 按商家筛选
+    if store_id:
+        statement = statement.where(Item.store_id == store_id)
+
+    # 按餐点名称搜索
+    if search:
+        from sqlalchemy import or_
+
+        statement = statement.where(
+            or_(
+                Item.name.like(f"%{search}%"),  # type: ignore
+                Item.description.like(f"%{search}%") if Item.description else False,  # type: ignore
+            )
+        )
+
+    statement = statement.offset(skip).limit(limit)
+    items = session.exec(statement).all()
+    return items
+
+
+@router.get("/store/{store_id}", response_model=List[ItemResponse])
+async def list_store_items(
+    store_id: int,
+    session: SessionDep,
+    skip: int = 0,
+    limit: int = 100,
+):
+    """查询指定商家的餐点列表"""
+    # 验证商家是否存在
+    store = session.get(Store, store_id)
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
+
+    statement = select(Item).where(Item.store_id == store_id)
+    statement = statement.offset(skip).limit(limit)
+    items = session.exec(statement).all()
+    return items
+
+
+@router.get("/{item_id}", response_model=ItemResponse)
+async def get_item(item_id: int, session: SessionDep):
+    """查询指定餐点信息"""
+    item = session.get(Item, item_id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
+    return item
+
+
+@router.put("/{item_id}", response_model=ItemResponse)
+async def update_item(
+    item_id: int,
+    item_update: ItemUpdate,
+    current_user: CurrentUser,
+    session: SessionDep,
+):
+    """更新餐点信息（商家本人或管理员）"""
+    item = session.get(Item, item_id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
+
+    # 获取商家信息验证权限
+    store = session.get(Store, item.store_id)
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
+
+    # 验证权限：只有商家本人或管理员可以修改
+    if current_user.user_type != UserType.ADMIN and store.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限修改该餐点信息"
+        )
+
+    # 更新餐点信息
+    update_data = item_update.model_dump(exclude_unset=True, by_alias=True)
+    for key, value in update_data.items():
+        setattr(item, key, value)
+
+    session.add(item)
+    session.commit()
+    session.refresh(item)
+    return item
+
+
+@router.delete("/{item_id}")
+async def delete_item(item_id: int, current_user: CurrentUser, session: SessionDep):
+    """删除餐点信息（商家本人或管理员）"""
+    item = session.get(Item, item_id)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
+
+    # 获取商家信息验证权限
+    store = session.get(Store, item.store_id)
+    if not store:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
+
+    # 验证权限：只有商家本人或管理员可以删除
+    if current_user.user_type != UserType.ADMIN and store.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限删除该餐点信息"
+        )
+
+    # TODO: 检查是否有未完成的订单包含该餐点
+
+    session.delete(item)
+    session.commit()
+    return {"message": "餐点已删除"}

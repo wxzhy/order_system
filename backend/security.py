@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
+import hashlib
 
 import jwt
-from passlib.context import CryptContext
+# from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+# 临时使用简单的 SHA256 加密（无盐），仅用于测试
+# ⚠️ 生产环境请使用 passlib 的 bcrypt 或 argon2
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 SECRET_KEY = "your-secret-key"  # 请换成环境变量或配置
@@ -20,11 +23,14 @@ def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """验证密码 - 临时使用 SHA256"""
+    plain_hash = hashlib.sha256(plain_password.encode()).hexdigest()
+    return plain_hash == hashed_password
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """生成密码哈希 - 临时使用 SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
 def create_refesh_token(
