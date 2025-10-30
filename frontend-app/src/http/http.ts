@@ -4,7 +4,6 @@ import { nextTick } from 'vue'
 import { LOGIN_PAGE } from '@/router/config'
 import { useTokenStore } from '@/store/token'
 import { isDoubleTokenMode } from '@/utils'
-import { ResultEnum } from './tools/enum'
 
 // 刷新 token 状态管理
 let refreshing = false // 防止重复刷新 token 标识
@@ -22,10 +21,10 @@ export function http<T>(options: CustomRequestOptions) {
       // 响应成功
       success: async (res) => {
         const responseData = res.data as IResponse<T>
-        const { code } = responseData
 
-        // 检查是否是401错误（包括HTTP状态码401或业务码401）
-        const isTokenExpired = res.statusCode === 401 || code === 401
+        // FastAPI uses standard HTTP status codes
+        // Check if HTTP status code is 401 (Unauthorized)
+        const isTokenExpired = res.statusCode === 401
 
         if (isTokenExpired) {
           const tokenStore = useTokenStore()
@@ -92,25 +91,21 @@ export function http<T>(options: CustomRequestOptions) {
           return reject(res)
         }
 
-        // 处理其他成功状态（HTTP状态码200-299）
+        // FastAPI uses standard HTTP status codes for success (2xx)
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          // 处理业务逻辑错误
-          if (code !== ResultEnum.Success0 && code !== ResultEnum.Success200) {
-            uni.showToast({
-              icon: 'none',
-              title: responseData.msg || responseData.message || '请求错误',
-            })
-          }
-          // TODO: check 如果不满足业务要求，也可以改为 reject(responseData as T)
+          // For FastAPI, we return the response data directly
+          // FastAPI doesn't wrap response in { code, msg, data } structure
           return resolve(responseData as T)
         }
 
-        // 处理其他错误
+        // Handle other HTTP errors (4xx, 5xx)
+        // FastAPI returns error message in 'detail' field
+        const errorMsg = (res.data as any).detail || (res.data as any).msg || '请求错误'
         !options.hideErrorToast
-        && uni.showToast({
-          icon: 'none',
-          title: (res.data as any).msg || '请求错误',
-        })
+          && uni.showToast({
+            icon: 'none',
+            title: errorMsg,
+          })
         reject(res)
       },
       // 响应失败

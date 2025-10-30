@@ -14,9 +14,11 @@ export function createDefaultOptions<
     transform: async response => response.data as unknown as ApiData,
     transformBackendResponse: async response => response.data as unknown as ApiData,
     onRequest: async config => config,
+    // For FastAPI, success is determined by HTTP status codes (handled by validateStatus)
+    // So we always return true here if the request wasn't rejected
     isBackendSuccess: _response => true,
-    onBackendFail: async () => {},
-    onError: async () => {}
+    onBackendFail: async () => { },
+    onError: async () => { }
   };
 
   if (options?.transform) {

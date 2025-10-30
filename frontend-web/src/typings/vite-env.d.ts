@@ -29,31 +29,39 @@ declare namespace Env {
     /** backend service base url */
     readonly VITE_SERVICE_BASE_URL: string;
     /**
-     * success code of backend service
+     * success code of backend service (HTTP status codes for FastAPI)
      *
-     * when the code is received, the request is successful
+     * when the HTTP status code is 2xx, the request is successful
+     *
+     * use "," to separate multiple codes (e.g., "200,201")
      */
     readonly VITE_SERVICE_SUCCESS_CODE: string;
     /**
-     * logout codes of backend service
+     * logout HTTP status codes of backend service
      *
-     * when the code is received, the user will be logged out and redirected to login page
+     * when the HTTP status code is received, the user will be logged out and redirected to login page
+     *
+     * For FastAPI: 401 (Unauthorized)
      *
      * use "," to separate multiple codes
      */
     readonly VITE_SERVICE_LOGOUT_CODES: string;
     /**
-     * modal logout codes of backend service
+     * modal logout HTTP status codes of backend service
      *
-     * when the code is received, the user will be logged out by displaying a modal
+     * when the HTTP status code is received, the user will be logged out by displaying a modal
+     *
+     * For FastAPI: 403 (Forbidden)
      *
      * use "," to separate multiple codes
      */
     readonly VITE_SERVICE_MODAL_LOGOUT_CODES: string;
     /**
-     * token expired codes of backend service
+     * token expired HTTP status codes of backend service
      *
-     * when the code is received, it will refresh the token and resend the request
+     * when the HTTP status code is received, it will refresh the token and resend the request
+     *
+     * For FastAPI: 401 (Unauthorized)
      *
      * use "," to separate multiple codes
      */

@@ -707,8 +707,8 @@ declare namespace App {
 
     type GetI18nKey<T extends Record<string, unknown>, K extends keyof T = keyof T> = K extends string
       ? T[K] extends Record<string, unknown>
-        ? `${K}.${GetI18nKey<T[K]>}`
-        : K
+      ? `${K}.${GetI18nKey<T[K]>}`
+      : K
       : never;
 
     type I18nKey = GetI18nKey<Schema>;
@@ -754,14 +754,24 @@ declare namespace App {
       other: Record<OtherBaseURLKey, string>;
     }
 
-    /** The backend service response data */
-    type Response<T = unknown> = {
-      /** The backend service response code */
-      code: string;
-      /** The backend service response message */
-      msg: string;
-      /** The backend service response data */
-      data: T;
+    /**
+     * The backend service response data (FastAPI)
+     * FastAPI returns data directly without wrapping in { code, msg, data } structure
+     * Success/failure is determined by HTTP status codes:
+     * - 2xx: Success
+     * - 4xx: Client errors (401: Unauthorized, 403: Forbidden, 404: Not Found, etc.)
+     * - 5xx: Server errors
+     * Error messages are in the 'detail' field
+     */
+    type Response<T = unknown> = T;
+
+    /**
+     * FastAPI error response
+     * When an error occurs, FastAPI returns an object with a 'detail' field
+     */
+    type ErrorResponse = {
+      /** The error detail message */
+      detail: string;
     };
 
     /** The demo backend service response data */

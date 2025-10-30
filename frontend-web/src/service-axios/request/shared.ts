@@ -11,23 +11,34 @@ export function getAuthorization() {
 }
 
 /** refresh token */
-export async function handleRefreshToken() {
+async function handleRefreshToken() {
   const { resetStore } = useAuthStore();
 
   const rToken = localStg.get('refreshToken') || '';
-  const refreshTokenMethod = fetchRefreshToken(rToken);
-
-  // set the refreshToken role, so that the request will not be intercepted
-  refreshTokenMethod.meta.authRole = 'refreshToken';
-
-  try {
-    const data = await refreshTokenMethod;
+  const { error, data } = await fetchRefreshToken(rToken);
+  if (!error) {
     localStg.set('token', data.token);
     localStg.set('refreshToken', data.refreshToken);
-  } catch (error) {
-    resetStore();
-    throw error;
+    return true;
   }
+
+  resetStore();
+
+  return false;
+}
+
+export async function handleExpiredRequest(state: RequestInstanceState) {
+  if (!state.refreshTokenFn) {
+    state.refreshTokenFn = handleRefreshToken();
+  }
+
+  const success = await state.refreshTokenFn;
+
+  setTimeout(() => {
+    state.refreshTokenFn = null;
+  }, 1000);
+
+  return success;
 }
 
 export function showErrorMsg(state: RequestInstanceState, message: string) {
@@ -40,18 +51,15 @@ export function showErrorMsg(state: RequestInstanceState, message: string) {
   if (!isExist) {
     state.errMsgStack.push(message);
 
-    if (window.$message) {
-      window.$message({
-        type: 'error',
-        message,
-        onClose: () => {
-          state.errMsgStack = state.errMsgStack.filter(msg => msg !== message);
+    window.$message?.error({
+      message,
+      onClose: () => {
+        state.errMsgStack = state.errMsgStack.filter(msg => msg !== message);
 
-          setTimeout(() => {
-            state.errMsgStack = [];
-          }, 5000);
-        }
-      });
-    }
+        setTimeout(() => {
+          state.errMsgStack = [];
+        }, 5000);
+      }
+    });
   }
 }
