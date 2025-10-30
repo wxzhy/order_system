@@ -8,7 +8,7 @@ from backend.models import User, UserType
 from backend.security import SECRET_KEY, ALGORITHM
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/token")
 
 
 async def get_session():

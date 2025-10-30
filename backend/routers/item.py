@@ -5,7 +5,7 @@ from backend.dependencies import SessionDep, CurrentUser, CurrentVendor
 from backend.models import Item, Store, UserType, StoreState
 from backend.schemas import ItemCreate, ItemUpdate, ItemResponse, PageResponse
 
-router = APIRouter(prefix="/api/item", tags=["餐点管理"])
+router = APIRouter(prefix="/item", tags=["餐点管理"])
 
 
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)

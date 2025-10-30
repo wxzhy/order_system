@@ -12,7 +12,7 @@ from backend.schemas import (
 )
 from backend.security import verify_password, get_password_hash
 
-router = APIRouter(prefix="/api/user", tags=["用户管理"])
+router = APIRouter(prefix="/user", tags=["用户管理"])
 
 
 @router.get("/me", response_model=UserResponse)

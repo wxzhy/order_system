@@ -12,7 +12,7 @@ from backend.schemas import (
     PageResponse,
 )
 
-router = APIRouter(prefix="/api/store", tags=["商家管理"])
+router = APIRouter(prefix="/store", tags=["商家管理"])
 
 
 @router.post("/", response_model=StoreResponse, status_code=status.HTTP_201_CREATED)

@@ -55,59 +55,59 @@ uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 ## API 端点
 
-### 认证模块 `/api/auth`
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/refresh` - 刷新令牌
-- `GET /api/auth/me` - 获取当前用户信息
+### 认证模块 `/auth`
+- `POST /auth/register` - 用户注册
+- `POST /auth/login` - 用户登录
+- `POST /auth/refresh` - 刷新令牌
+- `GET /auth/me` - 获取当前用户信息
 
-### 用户管理 `/api/user`
-- `GET /api/user/me` - 获取当前用户信息
-- `PUT /api/user/me` - 更新当前用户信息
-- `PUT /api/user/me/password` - 修改密码
-- `DELETE /api/user/me` - 注销账户
-- `GET /api/user/` - 管理员查询用户列表
-- `GET /api/user/{user_id}` - 管理员查询指定用户
-- `PUT /api/user/{user_id}` - 管理员更新用户
-- `DELETE /api/user/{user_id}` - 管理员删除用户
+### 用户管理 `/user`
+- `GET /user/me` - 获取当前用户信息
+- `PUT /user/me` - 更新当前用户信息
+- `PUT /user/me/password` - 修改密码
+- `DELETE /user/me` - 注销账户
+- `GET /user/` - 管理员查询用户列表
+- `GET /user/{user_id}` - 管理员查询指定用户
+- `PUT /user/{user_id}` - 管理员更新用户
+- `DELETE /user/{user_id}` - 管理员删除用户
 
-### 商家管理 `/api/store`
-- `POST /api/store/` - 发布商家信息
-- `GET /api/store/` - 查询商家列表
-- `GET /api/store/my` - 查询自己的商家信息
-- `GET /api/store/{store_id}` - 查询指定商家
-- `PUT /api/store/{store_id}` - 更新商家信息
-- `DELETE /api/store/{store_id}` - 删除商家信息
-- `GET /api/store/admin/pending` - 管理员查询待审核商家
-- `POST /api/store/{store_id}/review` - 管理员审核商家
+### 商家管理 `/store`
+- `POST /store/` - 发布商家信息
+- `GET /store/` - 查询商家列表
+- `GET /store/my` - 查询自己的商家信息
+- `GET /store/{store_id}` - 查询指定商家
+- `PUT /store/{store_id}` - 更新商家信息
+- `DELETE /store/{store_id}` - 删除商家信息
+- `GET /store/admin/pending` - 管理员查询待审核商家
+- `POST /store/{store_id}/review` - 管理员审核商家
 
-### 餐点管理 `/api/item`
-- `POST /api/item/` - 添加餐点
-- `GET /api/item/` - 查询餐点列表
-- `GET /api/item/store/{store_id}` - 查询指定商家的餐点
-- `GET /api/item/{item_id}` - 查询指定餐点
-- `PUT /api/item/{item_id}` - 更新餐点
-- `DELETE /api/item/{item_id}` - 删除餐点
+### 餐点管理 `/item`
+- `POST /item/` - 添加餐点
+- `GET /item/` - 查询餐点列表
+- `GET /item/store/{store_id}` - 查询指定商家的餐点
+- `GET /item/{item_id}` - 查询指定餐点
+- `PUT /item/{item_id}` - 更新餐点
+- `DELETE /item/{item_id}` - 删除餐点
 
-### 订单管理 `/api/order`
-- `POST /api/order/` - 创建订单
-- `GET /api/order/` - 查询订单列表
-- `GET /api/order/my` - 查询自己的订单
-- `GET /api/order/store/my` - 商家查询店铺订单
-- `GET /api/order/{order_id}` - 查询指定订单
-- `PUT /api/order/{order_id}` - 更新订单状态
-- `DELETE /api/order/{order_id}` - 删除订单
+### 订单管理 `/order`
+- `POST /order/` - 创建订单
+- `GET /order/` - 查询订单列表
+- `GET /order/my` - 查询自己的订单
+- `GET /order/store/my` - 商家查询店铺订单
+- `GET /order/{order_id}` - 查询指定订单
+- `PUT /order/{order_id}` - 更新订单状态
+- `DELETE /order/{order_id}` - 删除订单
 
-### 评论管理 `/api/comment`
-- `POST /api/comment/` - 发表评论
-- `GET /api/comment/` - 查询评论列表
-- `GET /api/comment/store/{store_id}` - 查询指定商家的评论
-- `GET /api/comment/my` - 查询自己的评论
-- `GET /api/comment/{comment_id}` - 查询指定评论
-- `PUT /api/comment/{comment_id}` - 更新评论
-- `DELETE /api/comment/{comment_id}` - 删除评论
-- `GET /api/comment/admin/pending` - 管理员查询待审核评论
-- `POST /api/comment/{comment_id}/review` - 管理员审核评论
+### 评论管理 `/comment`
+- `POST /comment/` - 发表评论
+- `GET /comment/` - 查询评论列表
+- `GET /comment/store/{store_id}` - 查询指定商家的评论
+- `GET /comment/my` - 查询自己的评论
+- `GET /comment/{comment_id}` - 查询指定评论
+- `PUT /comment/{comment_id}` - 更新评论
+- `DELETE /comment/{comment_id}` - 删除评论
+- `GET /comment/admin/pending` - 管理员查询待审核评论
+- `POST /comment/{comment_id}/review` - 管理员审核评论
 
 ## 用户角色
 

@@ -12,7 +12,7 @@ from backend.schemas import (
     PageResponse,
 )
 
-router = APIRouter(prefix="/api/comment", tags=["评论管理"])
+router = APIRouter(prefix="/comment", tags=["评论管理"])
 
 
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)

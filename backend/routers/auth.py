@@ -18,7 +18,7 @@ from backend.security import (
 import jwt
 from backend.security import SECRET_KEY, ALGORITHM
 
-router = APIRouter(prefix="/api/auth", tags=["认证"])
+router = APIRouter(prefix="/auth", tags=["认证"])
 
 
 @router.post(

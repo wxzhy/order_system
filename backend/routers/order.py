@@ -11,7 +11,7 @@ from backend.dependencies import (
 from backend.models import Order, OrderItem, Item, Store, OrderState, UserType, User
 from backend.schemas import OrderCreate, OrderUpdate, OrderResponse, PageResponse
 
-router = APIRouter(prefix="/api/order", tags=["订单管理"])
+router = APIRouter(prefix="/order", tags=["订单管理"])
 
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
