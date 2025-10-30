@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
@@ -9,6 +8,7 @@ from backend.schemas import (
     UserUpdate,
     UserPasswordUpdate,
     UserPasswordReset,
+    PageResponse,
 )
 from backend.security import verify_password, get_password_hash
 
@@ -97,7 +97,7 @@ async def delete_my_account(current_user: CurrentUser, session: SessionDep):
 
 
 # ============ 管理员功能 ============
-@router.get("/", response_model=List[UserResponse])
+@router.get("/", response_model=PageResponse[UserResponse])
 async def list_users(
     session: SessionDep,
     current_admin: CurrentAdmin,
@@ -107,27 +107,38 @@ async def list_users(
     search: str | None = None,
 ):
     """管理员查询用户列表"""
+    from sqlalchemy import func, or_
+
+    # 构建基础查询
     statement = select(User)
+    count_statement = select(func.count()).select_from(User)
 
     # 按用户类型筛选
     if user_type:
         statement = statement.where(User.user_type == user_type)
+        count_statement = count_statement.where(User.user_type == user_type)
 
     # 按关键词搜索（用户名、邮箱、手机号）
     if search:
-        from sqlalchemy import or_
-
-        statement = statement.where(
-            or_(
-                User.username.like(f"%{search}%"),  # type: ignore
-                User.email.like(f"%{search}%"),  # type: ignore
-                User.phone.like(f"%{search}%") if User.phone else False,  # type: ignore
-            )
+        search_condition = or_(
+            User.username.like(f"%{search}%"),  # type: ignore
+            User.email.like(f"%{search}%"),  # type: ignore
+            User.phone.like(f"%{search}%") if User.phone else False,  # type: ignore
         )
+        statement = statement.where(search_condition)
+        count_statement = count_statement.where(search_condition)
 
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    users = session.exec(statement).all()
-    return users
+    users = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=users, total=total, current=current, size=limit)
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -183,6 +194,25 @@ async def delete_user(user_id: int, session: SessionDep, current_admin: CurrentA
     session.delete(user)
     session.commit()
     return {"message": "用户已删除"}
+
+
+@router.put("/{user_id}/reset-password")
+async def admin_reset_user_password(
+    user_id: int,
+    session: SessionDep,
+    current_admin: CurrentAdmin,
+    new_password: str = "123456",
+):
+    """管理员重置指定用户密码"""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+
+    # 更新密码为默认密码或指定密码
+    user.hashed_password = get_password_hash(new_password)
+    session.add(user)
+    session.commit()
+    return {"message": f"密码已重置为: {new_password}"}
 
 
 @router.post("/reset-password")

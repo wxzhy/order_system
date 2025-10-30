@@ -1,11 +1,16 @@
-from typing import List
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentCustomer
-from backend.models import Comment, Store, CommentState, UserType
-from backend.schemas import CommentCreate, CommentUpdate, CommentResponse, CommentReview
+from backend.models import Comment, Store, CommentState, UserType, User
+from backend.schemas import (
+    CommentCreate,
+    CommentUpdate,
+    CommentResponse,
+    CommentReview,
+    PageResponse,
+)
 
 router = APIRouter(prefix="/api/comment", tags=["评论管理"])
 
@@ -41,34 +46,60 @@ async def create_comment(
     return db_comment
 
 
-@router.get("/", response_model=List[CommentResponse])
+@router.get("/", response_model=PageResponse[CommentResponse])
 async def list_comments(
     session: SessionDep,
     skip: int = 0,
     limit: int = 100,
     store_id: int | None = None,
     state: CommentState | None = None,
+    search: str | None = None,
 ):
-    """查询评论列表（默认只显示审核通过的）"""
+    """查询评论列表（默认只显示审核通过的，支持搜索）"""
+    from sqlalchemy import func, or_
+
     statement = select(Comment)
+    count_statement = select(func.count()).select_from(Comment)
 
     # 按商家筛选
     if store_id:
         statement = statement.where(Comment.store_id == store_id)
+        count_statement = count_statement.where(Comment.store_id == store_id)
 
     # 按状态筛选
     if state:
         statement = statement.where(Comment.state == state)
+        count_statement = count_statement.where(Comment.state == state)
     else:
         # 默认只显示审核通过的评论
         statement = statement.where(Comment.state == CommentState.APPROVED)
+        count_statement = count_statement.where(Comment.state == CommentState.APPROVED)
 
+    # 搜索功能：通过评论内容、商家名称或用户名搜索
+    if search:
+        # 需要关联 Store 和 User 表进行搜索
+        search_condition = or_(
+            Comment.content.like(f"%{search}%"),  # type: ignore
+            Store.name.like(f"%{search}%"),  # type: ignore
+            User.username.like(f"%{search}%"),  # type: ignore
+        )
+        statement = statement.join(Store).join(User).where(search_condition)
+        count_statement = count_statement.join(Store).join(User).where(search_condition)
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = session.exec(statement).all()
-    return comments
+    comments = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=comments, total=total, current=current, size=limit)
 
 
-@router.get("/store/{store_id}", response_model=List[CommentResponse])
+@router.get("/store/{store_id}", response_model=PageResponse[CommentResponse])
 async def list_store_comments(
     store_id: int,
     session: SessionDep,
@@ -76,6 +107,8 @@ async def list_store_comments(
     limit: int = 100,
 ):
     """查询指定商家的评论列表（只显示审核通过的）"""
+    from sqlalchemy import func
+
     # 验证商家是否存在
     store = session.get(Store, store_id)
     if not store:
@@ -84,12 +117,26 @@ async def list_store_comments(
     statement = select(Comment).where(
         Comment.store_id == store_id, Comment.state == CommentState.APPROVED
     )
+    count_statement = (
+        select(func.count())
+        .select_from(Comment)
+        .where(Comment.store_id == store_id, Comment.state == CommentState.APPROVED)
+    )
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = session.exec(statement).all()
-    return comments
+    comments = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=comments, total=total, current=current, size=limit)
 
 
-@router.get("/my", response_model=List[CommentResponse])
+@router.get("/my", response_model=PageResponse[CommentResponse])
 async def get_my_comments(
     session: SessionDep,
     current_customer: CurrentCustomer,
@@ -97,10 +144,26 @@ async def get_my_comments(
     limit: int = 100,
 ):
     """查询当前用户的评论"""
+    from sqlalchemy import func
+
     statement = select(Comment).where(Comment.user_id == current_customer.id)
+    count_statement = (
+        select(func.count())
+        .select_from(Comment)
+        .where(Comment.user_id == current_customer.id)
+    )
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = session.exec(statement).all()
-    return comments
+    comments = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=comments, total=total, current=current, size=limit)
 
 
 @router.get("/{comment_id}", response_model=CommentResponse)
@@ -163,7 +226,7 @@ async def delete_comment(
 
 
 # ============ 管理员功能 ============
-@router.get("/admin/pending", response_model=List[CommentResponse])
+@router.get("/admin/pending", response_model=PageResponse[CommentResponse])
 async def list_pending_comments(
     session: SessionDep,
     current_admin: CurrentAdmin,
@@ -171,10 +234,26 @@ async def list_pending_comments(
     limit: int = 100,
 ):
     """管理员查询待审核的评论列表"""
+    from sqlalchemy import func
+
     statement = select(Comment).where(Comment.state == CommentState.PENDING)
+    count_statement = (
+        select(func.count())
+        .select_from(Comment)
+        .where(Comment.state == CommentState.PENDING)
+    )
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = session.exec(statement).all()
-    return comments
+    comments = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=comments, total=total, current=current, size=limit)
 
 
 @router.post("/{comment_id}/review", response_model=CommentResponse)

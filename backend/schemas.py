@@ -1,7 +1,23 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel, EmailStr, Field
 from backend.models import UserType, StoreState, OrderState, CommentState
+
+
+# ============ Generic Pagination Response ============
+T = TypeVar("T")
+
+
+class PageResponse(BaseModel, Generic[T]):
+    """通用分页响应模型"""
+
+    records: List[T]
+    total: int
+    current: int
+    size: int
+
+    class Config:
+        from_attributes = True
 
 
 # ============ User Schemas ============

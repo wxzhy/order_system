@@ -1,10 +1,9 @@
-from typing import List
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentVendor
 from backend.models import Item, Store, UserType, StoreState
-from backend.schemas import ItemCreate, ItemUpdate, ItemResponse
+from backend.schemas import ItemCreate, ItemUpdate, ItemResponse, PageResponse
 
 router = APIRouter(prefix="/api/item", tags=["餐点管理"])
 
@@ -39,38 +38,68 @@ async def create_item(
     return db_item
 
 
-@router.get("/", response_model=List[ItemResponse])
+@router.get("/", response_model=PageResponse[ItemResponse])
 async def list_items(
     session: SessionDep,
     skip: int = 0,
     limit: int = 100,
     store_id: int | None = None,
     search: str | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+    in_stock: bool | None = None,
 ):
-    """查询餐点列表"""
+    """查询餐点列表（支持多条件搜索和筛选）"""
+    from sqlalchemy import func, or_
+
     statement = select(Item)
+    count_statement = select(func.count()).select_from(Item)
 
     # 按商家筛选
     if store_id:
         statement = statement.where(Item.store_id == store_id)
+        count_statement = count_statement.where(Item.store_id == store_id)
 
-    # 按餐点名称搜索
+    # 按餐点名称或描述搜索
     if search:
-        from sqlalchemy import or_
-
-        statement = statement.where(
-            or_(
-                Item.name.like(f"%{search}%"),  # type: ignore
-                Item.description.like(f"%{search}%") if Item.description else False,  # type: ignore
-            )
+        search_condition = or_(
+            Item.name.like(f"%{search}%"),  # type: ignore
+            Item.description.like(f"%{search}%") if Item.description else False,  # type: ignore
         )
+        statement = statement.where(search_condition)
+        count_statement = count_statement.where(search_condition)
 
+    # 按价格范围筛选
+    if min_price is not None:
+        statement = statement.where(Item.price >= min_price)
+        count_statement = count_statement.where(Item.price >= min_price)
+    if max_price is not None:
+        statement = statement.where(Item.price <= max_price)
+        count_statement = count_statement.where(Item.price <= max_price)
+
+    # 按库存状态筛选
+    if in_stock is not None:
+        if in_stock:
+            statement = statement.where(Item.quantity > 0)
+            count_statement = count_statement.where(Item.quantity > 0)
+        else:
+            statement = statement.where(Item.quantity == 0)
+            count_statement = count_statement.where(Item.quantity == 0)
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    items = session.exec(statement).all()
-    return items
+    items = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=items, total=total, current=current, size=limit)
 
 
-@router.get("/store/{store_id}", response_model=List[ItemResponse])
+@router.get("/store/{store_id}", response_model=PageResponse[ItemResponse])
 async def list_store_items(
     store_id: int,
     session: SessionDep,
@@ -78,15 +107,29 @@ async def list_store_items(
     limit: int = 100,
 ):
     """查询指定商家的餐点列表"""
+    from sqlalchemy import func
+
     # 验证商家是否存在
     store = session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
     statement = select(Item).where(Item.store_id == store_id)
+    count_statement = (
+        select(func.count()).select_from(Item).where(Item.store_id == store_id)
+    )
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    items = session.exec(statement).all()
-    return items
+    items = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=items, total=total, current=current, size=limit)
 
 
 @router.get("/{item_id}", response_model=ItemResponse)

@@ -1,4 +1,3 @@
-from typing import List
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
@@ -9,8 +8,8 @@ from backend.dependencies import (
     CurrentVendor,
     CurrentCustomer,
 )
-from backend.models import Order, OrderItem, Item, Store, OrderState, UserType
-from backend.schemas import OrderCreate, OrderUpdate, OrderResponse
+from backend.models import Order, OrderItem, Item, Store, OrderState, UserType, User
+from backend.schemas import OrderCreate, OrderUpdate, OrderResponse, PageResponse
 
 router = APIRouter(prefix="/api/order", tags=["订单管理"])
 
@@ -107,50 +106,86 @@ async def create_order(
     return response
 
 
-@router.get("/", response_model=List[OrderResponse])
+@router.get("/", response_model=PageResponse[OrderResponse])
 async def list_orders(
     session: SessionDep,
     current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
     state: OrderState | None = None,
+    search: str | None = None,
+    store_id: int | None = None,
+    user_id: int | None = None,
 ):
-    """查询订单列表"""
+    """查询订单列表（支持搜索）"""
+    from sqlalchemy import func, or_
+
     statement = select(Order)
+    count_statement = select(func.count()).select_from(Order)
 
     # 根据用户类型过滤订单
     if current_user.user_type == UserType.CUSTOMER:
         # 普通用户只能查看自己的订单
         statement = statement.where(Order.user_id == current_user.id)
+        count_statement = count_statement.where(Order.user_id == current_user.id)
     elif current_user.user_type == UserType.VENDOR:
         # 商家查看自己店铺的订单
         store_statement = select(Store).where(Store.owner_id == current_user.id)
         store = session.exec(store_statement).first()
         if store:
             statement = statement.where(Order.store_id == store.id)
+            count_statement = count_statement.where(Order.store_id == store.id)
         else:
-            return []
+            return PageResponse(records=[], total=0, current=1, size=limit)
     # 管理员可以查看所有订单
 
     # 按状态筛选
     if state:
         statement = statement.where(Order.state == state)
+        count_statement = count_statement.where(Order.state == state)
 
+    # 按商家ID筛选（仅管理员）
+    if store_id and current_user.user_type == UserType.ADMIN:
+        statement = statement.where(Order.store_id == store_id)
+        count_statement = count_statement.where(Order.store_id == store_id)
+
+    # 按用户ID筛选（仅管理员）
+    if user_id and current_user.user_type == UserType.ADMIN:
+        statement = statement.where(Order.user_id == user_id)
+        count_statement = count_statement.where(Order.user_id == user_id)
+
+    # 搜索功能：通过关联的商家名称或用户名搜索
+    if search:
+        # 需要关联 Store 和 User 表进行搜索
+        search_condition = or_(
+            Store.name.like(f"%{search}%"),  # type: ignore
+            User.username.like(f"%{search}%"),  # type: ignore
+        )
+        statement = statement.join(Store).join(User).where(search_condition)
+        count_statement = count_statement.join(Store).join(User).where(search_condition)
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    orders = session.exec(statement).all()
+    orders = list(session.exec(statement).all())
 
     # 计算每个订单的总金额
     result = []
     for order in orders:
         order_response = OrderResponse.model_validate(order)
-        total = sum(item.item_price * item.quantity for item in order.items)
-        order_response.total_amount = total
+        total_amount = sum(item.item_price * item.quantity for item in order.items)
+        order_response.total_amount = total_amount
         result.append(order_response)
 
-    return result
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
-@router.get("/my", response_model=List[OrderResponse])
+@router.get("/my", response_model=PageResponse[OrderResponse])
 async def get_my_orders(
     session: SessionDep,
     current_customer: CurrentCustomer,
@@ -159,26 +194,41 @@ async def get_my_orders(
     state: OrderState | None = None,
 ):
     """查询当前用户的订单"""
+    from sqlalchemy import func
+
     statement = select(Order).where(Order.user_id == current_customer.id)
+    count_statement = (
+        select(func.count())
+        .select_from(Order)
+        .where(Order.user_id == current_customer.id)
+    )
 
     if state:
         statement = statement.where(Order.state == state)
+        count_statement = count_statement.where(Order.state == state)
 
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    orders = session.exec(statement).all()
+    orders = list(session.exec(statement).all())
 
     # 计算每个订单的总金额
     result = []
     for order in orders:
         order_response = OrderResponse.model_validate(order)
-        total = sum(item.item_price * item.quantity for item in order.items)
-        order_response.total_amount = total
+        total_amount = sum(item.item_price * item.quantity for item in order.items)
+        order_response.total_amount = total_amount
         result.append(order_response)
 
-    return result
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
-@router.get("/store/my", response_model=List[OrderResponse])
+@router.get("/store/my", response_model=PageResponse[OrderResponse])
 async def get_my_store_orders(
     session: SessionDep,
     current_vendor: CurrentVendor,
@@ -187,6 +237,8 @@ async def get_my_store_orders(
     state: OrderState | None = None,
 ):
     """商家查询自己店铺的订单"""
+    from sqlalchemy import func
+
     # 获取商家的店铺
     store_statement = select(Store).where(Store.owner_id == current_vendor.id)
     store = session.exec(store_statement).first()
@@ -197,22 +249,33 @@ async def get_my_store_orders(
         )
 
     statement = select(Order).where(Order.store_id == store.id)
+    count_statement = (
+        select(func.count()).select_from(Order).where(Order.store_id == store.id)
+    )
 
     if state:
         statement = statement.where(Order.state == state)
+        count_statement = count_statement.where(Order.state == state)
 
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    orders = session.exec(statement).all()
+    orders = list(session.exec(statement).all())
 
     # 计算每个订单的总金额
     result = []
     for order in orders:
         order_response = OrderResponse.model_validate(order)
-        total = sum(item.item_price * item.quantity for item in order.items)
-        order_response.total_amount = total
+        total_amount = sum(item.item_price * item.quantity for item in order.items)
+        order_response.total_amount = total_amount
         result.append(order_response)
 
-    return result
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
 @router.get("/{order_id}", response_model=OrderResponse)

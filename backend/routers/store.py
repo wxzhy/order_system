@@ -1,11 +1,16 @@
-from typing import List
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentVendor
 from backend.models import Store, StoreState, UserType
-from backend.schemas import StoreCreate, StoreUpdate, StoreResponse, StoreReview
+from backend.schemas import (
+    StoreCreate,
+    StoreUpdate,
+    StoreResponse,
+    StoreReview,
+    PageResponse,
+)
 
 router = APIRouter(prefix="/api/store", tags=["商家管理"])
 
@@ -48,39 +53,57 @@ async def create_store(
     return db_store
 
 
-@router.get("/", response_model=List[StoreResponse])
+@router.get("/", response_model=PageResponse[StoreResponse])
 async def list_stores(
     session: SessionDep,
     skip: int = 0,
     limit: int = 100,
     state: StoreState | None = None,
     search: str | None = None,
+    owner_id: int | None = None,
 ):
-    """查询商家列表（所有用户可见）"""
+    """查询商家列表（所有用户可见，支持搜索）"""
+    from sqlalchemy import func, or_
+
     statement = select(Store)
+    count_statement = select(func.count()).select_from(Store)
 
     # 非管理员只能查看已审核通过的商家
     # 注意：这里需要从请求上下文获取当前用户，简化处理，只返回APPROVED状态
     if state:
         statement = statement.where(Store.state == state)
+        count_statement = count_statement.where(Store.state == state)
     else:
         # 默认只显示审核通过的商家
         statement = statement.where(Store.state == StoreState.APPROVED)
+        count_statement = count_statement.where(Store.state == StoreState.APPROVED)
 
-    # 按商家名称搜索
+    # 按商家名称或描述搜索
     if search:
-        from sqlalchemy import or_
-
-        statement = statement.where(
-            or_(
-                Store.name.like(f"%{search}%"),  # type: ignore
-                Store.description.like(f"%{search}%") if Store.description else False,  # type: ignore
-            )
+        search_condition = or_(
+            Store.name.like(f"%{search}%"),  # type: ignore
+            Store.description.like(f"%{search}%") if Store.description else False,  # type: ignore
+            Store.address.like(f"%{search}%"),  # type: ignore
         )
+        statement = statement.where(search_condition)
+        count_statement = count_statement.where(search_condition)
 
+    # 按店主ID筛选（用于管理后台）
+    if owner_id:
+        statement = statement.where(Store.owner_id == owner_id)
+        count_statement = count_statement.where(Store.owner_id == owner_id)
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    stores = session.exec(statement).all()
-    return stores
+    stores = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=stores, total=total, current=current, size=limit)
 
 
 @router.get("/my", response_model=StoreResponse)
@@ -157,7 +180,7 @@ async def delete_store(store_id: int, current_user: CurrentUser, session: Sessio
 
 
 # ============ 管理员功能 ============
-@router.get("/admin/pending", response_model=List[StoreResponse])
+@router.get("/admin/pending", response_model=PageResponse[StoreResponse])
 async def list_pending_stores(
     session: SessionDep,
     current_admin: CurrentAdmin,
@@ -165,10 +188,24 @@ async def list_pending_stores(
     limit: int = 100,
 ):
     """管理员查询待审核的商家列表"""
+    from sqlalchemy import func
+
     statement = select(Store).where(Store.state == StoreState.PENDING)
+    count_statement = (
+        select(func.count()).select_from(Store).where(Store.state == StoreState.PENDING)
+    )
+
+    # 获取总数
+    total = session.exec(count_statement).one()
+
+    # 分页查询
     statement = statement.offset(skip).limit(limit)
-    stores = session.exec(statement).all()
-    return stores
+    stores = list(session.exec(statement).all())
+
+    # 计算当前页码
+    current = (skip // limit) + 1 if limit > 0 else 1
+
+    return PageResponse(records=stores, total=total, current=current, size=limit)
 
 
 @router.post("/{store_id}/review", response_model=StoreResponse)
