@@ -152,6 +152,7 @@ class OrderItemCreate(BaseModel):
 class OrderItemResponse(BaseModel):
     id: int
     item_id: int
+    item_name: Optional[str] = None  # 菜品名称
     quantity: int
     item_price: float
     item: Optional[ItemResponse] = None

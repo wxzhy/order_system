@@ -91,7 +91,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
             formatter: (row: Api.SystemManage.Order) => (
                 <div class="flex-center gap-8px">
                     <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
-                        {$t('common.edit')}
+                        详情
                     </ElButton>
                     {row.state === 'pending' && (
                         <>

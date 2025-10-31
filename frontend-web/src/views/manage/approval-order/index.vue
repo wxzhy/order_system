@@ -104,7 +104,9 @@ function resetSearchParams() {
       <template #header>
         <div class="flex items-center justify-between">
           <p>订单审批列表</p>
-          <TableHeaderOperation v-model:columns="columnChecks" :loading="loading" @refresh="getData" />
+          <TableHeaderOperation v-model:columns="columnChecks" :loading="loading" @refresh="getData">
+            <template #default><span></span></template>
+          </TableHeaderOperation>
         </div>
       </template>
       <div class="h-[calc(100%-50px)]">

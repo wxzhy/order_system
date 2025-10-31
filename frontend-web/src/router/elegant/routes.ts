@@ -47,7 +47,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'about',
       i18nKey: 'route.about',
       icon: 'fluent:book-information-24-regular',
-      order: 10
+      order: 10,
+      hideInMenu: true
     }
   },
   {
@@ -58,7 +59,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'alova',
       i18nKey: 'route.alova',
       icon: 'carbon:http',
-      order: 7
+      order: 7,
+      hideInMenu: true
     },
     children: [
       {
@@ -103,7 +105,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'function',
       i18nKey: 'route.function',
       icon: 'icon-park-outline:all-application',
-      order: 6
+      order: 6,
+      hideInMenu: true
     },
     children: [
       {
@@ -257,7 +260,7 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'manage',
       i18nKey: 'route.manage',
       icon: 'carbon:cloud-service-management',
-      order: 9,
+      order: 10,
       roles: ['admin']
     },
     children: [
@@ -269,8 +272,9 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_approval',
           i18nKey: 'route.manage_approval',
           icon: 'mdi:clipboard-check-outline',
-          order: 7,
-          roles: ['admin']
+          order: 1,
+          roles: ['admin'],
+          hideInMenu: true
         }
       },
       {
@@ -281,7 +285,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_approval-comment',
           i18nKey: 'route.manage_approval-comment',
           icon: 'mdi:comment-check-outline',
-          order: 9,
+          order: 7,
           roles: ['admin']
         }
       },
@@ -293,7 +297,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_approval-order',
           i18nKey: 'route.manage_approval-order',
           icon: 'mdi:receipt-text-check-outline',
-          order: 8,
+          order: 6,
           roles: ['admin']
         }
       },
@@ -305,7 +309,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_approval-store',
           i18nKey: 'route.manage_approval-store',
           icon: 'mdi:store-check-outline',
-          order: 7,
+          order: 5,
           roles: ['admin']
         }
       },
@@ -317,7 +321,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_comment',
           i18nKey: 'route.manage_comment',
           icon: 'mdi:comment-text-outline',
-          order: 6,
+          order: 4,
           roles: ['admin']
         }
       },
@@ -329,7 +333,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_item',
           i18nKey: 'route.manage_item',
           icon: 'mdi:food',
-          order: 4,
+          order: 3,
           roles: ['admin']
         }
       },
@@ -341,9 +345,10 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_menu',
           i18nKey: 'route.manage_menu',
           icon: 'material-symbols:route',
-          order: 3,
+          order: 9,
           roles: ['admin'],
-          keepAlive: true
+          keepAlive: true,
+          hideInMenu: true
         }
       },
       {
@@ -354,7 +359,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_order',
           i18nKey: 'route.manage_order',
           icon: 'mdi:receipt-text-outline',
-          order: 5,
+          order: 3,
           roles: ['admin']
         }
       },
@@ -366,8 +371,9 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_role',
           i18nKey: 'route.manage_role',
           icon: 'carbon:user-role',
-          order: 2,
-          roles: ['admin']
+          order: 8,
+          roles: ['admin'],
+          hideInMenu: true
         }
       },
       {
@@ -378,7 +384,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_store',
           i18nKey: 'route.manage_store',
           icon: 'mdi:store',
-          order: 3,
+          order: 2,
           roles: ['admin']
         }
       },
@@ -390,7 +396,7 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_user',
           i18nKey: 'route.manage_user',
           icon: 'ic:round-manage-accounts',
-          order: 1,
+          order: 5,
           roles: ['admin']
         }
       },
@@ -416,7 +422,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'multi-menu',
       i18nKey: 'route.multi-menu',
-      order: 8
+      order: 8,
+      hideInMenu: true
     },
     children: [
       {
@@ -479,7 +486,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: '插件示例',
       i18nKey: 'route.plugin',
       order: 7,
-      icon: 'clarity:plugin-line'
+      icon: 'clarity:plugin-line',
+      hideInMenu: true
     },
     children: [
       {

@@ -235,6 +235,7 @@ declare namespace Api {
       quantity: number;
       item_price: number;
       item_id: number;
+      item_name?: string; // 菜品名称
     };
 
     /** order - 订单 */
