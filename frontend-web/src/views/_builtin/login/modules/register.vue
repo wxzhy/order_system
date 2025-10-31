@@ -16,6 +16,7 @@ interface FormModel {
   phone: string;
   password: string;
   confirmPassword: string;
+  user_type: 'customer' | 'vendor';
 }
 
 const model = ref<FormModel>({
@@ -23,20 +24,22 @@ const model = ref<FormModel>({
   email: '',
   phone: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  user_type: 'customer'
 });
 
 const loading = ref(false);
 
-const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
-  const { formRules, createConfirmPwdRule } = useFormRules();
+const rules = computed<Record<string, App.Global.FormRule[]>>(() => {
+  const { formRules, createConfirmPwdRule, defaultRequiredRule } = useFormRules();
 
   return {
     username: formRules.userName,
     email: formRules.email,
     phone: formRules.phone,
     password: formRules.pwd,
-    confirmPassword: createConfirmPwdRule(model.value.password)
+    confirmPassword: createConfirmPwdRule(model.value.password),
+    user_type: [defaultRequiredRule]
   };
 });
 
@@ -50,7 +53,7 @@ async function handleSubmit() {
       email: model.value.email,
       phone: model.value.phone,
       password: model.value.password,
-      user_type: 'customer'
+      user_type: model.value.user_type
     });
 
     window.$message?.success('注册成功！');
@@ -65,6 +68,27 @@ async function handleSubmit() {
 
 <template>
   <ElForm ref="formRef" :model="model" :rules="rules" size="large" :show-label="false" @keyup.enter="handleSubmit">
+    <ElFormItem prop="user_type">
+      <ElRadioGroup v-model="model.user_type" class="account-type-radio">
+        <ElRadioButton value="customer">
+          <ElIcon class="mr-4px">
+            <icon-mdi:account />
+          </ElIcon>
+          普通用户
+        </ElRadioButton>
+        <ElRadioButton value="vendor">
+          <ElIcon class="mr-4px">
+            <icon-mdi:store />
+          </ElIcon>
+          商家
+        </ElRadioButton>
+      </ElRadioGroup>
+    </ElFormItem>
+    <ElAlert v-if="model.user_type === 'vendor'" type="info" :closable="false" class="mb-16px">
+      <template #title>
+        <span class="text-12px">注册商家账户后,需要在商家中心完善店铺信息并等待审核</span>
+      </template>
+    </ElAlert>
     <ElFormItem prop="username">
       <ElInput v-model="model.username" :placeholder="$t('page.login.common.userNamePlaceholder')" />
     </ElFormItem>
@@ -75,12 +99,20 @@ async function handleSubmit() {
       <ElInput v-model="model.phone" :placeholder="$t('page.login.common.phonePlaceholder')" />
     </ElFormItem>
     <ElFormItem prop="password">
-      <ElInput v-model="model.password" type="password" show-password-on="click"
-        :placeholder="$t('page.login.common.passwordPlaceholder')" />
+      <ElInput
+        v-model="model.password"
+        type="password"
+        show-password-on="click"
+        :placeholder="$t('page.login.common.passwordPlaceholder')"
+      />
     </ElFormItem>
     <ElFormItem prop="confirmPassword">
-      <ElInput v-model="model.confirmPassword" type="password" show-password-on="click"
-        :placeholder="$t('page.login.common.confirmPasswordPlaceholder')" />
+      <ElInput
+        v-model="model.confirmPassword"
+        type="password"
+        show-password-on="click"
+        :placeholder="$t('page.login.common.confirmPasswordPlaceholder')"
+      />
     </ElFormItem>
     <ElSpace direction="vertical" :size="18" fill class="w-full">
       <ElButton type="primary" size="large" round block :loading="loading" @click="handleSubmit">
@@ -93,4 +125,21 @@ async function handleSubmit() {
   </ElForm>
 </template>
 
-<style scoped></style>
+<style scoped>
+.account-type-radio {
+  width: 100%;
+  display: flex;
+}
+
+.account-type-radio :deep(.el-radio-button) {
+  flex: 1;
+}
+
+.account-type-radio :deep(.el-radio-button__inner) {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+}
+</style>
