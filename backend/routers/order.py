@@ -25,11 +25,11 @@ router = APIRouter(prefix="/order", tags=["订单管理"])
 def populate_order_response(order: Order, session: Session) -> OrderResponse:
     """填充订单响应数据，包括菜品名称和总金额"""
     order_response = OrderResponse.model_validate(order)
-    
+
     # 填充订单项的菜品名称
     items_with_names = []
     total_amount = 0.0
-    
+
     for order_item in order.items:
         item_response = OrderItemResponse.model_validate(order_item)
         # 查询菜品名称
@@ -38,10 +38,10 @@ def populate_order_response(order: Order, session: Session) -> OrderResponse:
             item_response.item_name = item.name
         total_amount += order_item.item_price * order_item.quantity
         items_with_names.append(item_response)
-    
+
     order_response.items = items_with_names
     order_response.total_amount = total_amount
-    
+
     return order_response
 
 
