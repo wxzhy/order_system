@@ -185,13 +185,21 @@ async def list_orders(
 
     # 按用户名搜索（模糊搜索，需要关联User表）
     if user_name:
-        statement = statement.join(User, Order.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
-        count_statement = count_statement.join(User, Order.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+        statement = statement.join(User, Order.user_id == User.id).where(
+            User.username.like(f"%{user_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(User, Order.user_id == User.id).where(
+            User.username.like(f"%{user_name}%")
+        )  # type: ignore
 
     # 按商家名称搜索（模糊搜索，需要关联Store表）
     if store_name:
-        statement = statement.join(Store, Order.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
-        count_statement = count_statement.join(Store, Order.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        statement = statement.join(Store, Order.store_id == Store.id).where(
+            Store.name.like(f"%{store_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(Store, Order.store_id == Store.id).where(
+            Store.name.like(f"%{store_name}%")
+        )  # type: ignore
 
     # 按商家ID筛选（仅管理员，内部参数）
     if store_id and current_user.user_type == UserType.ADMIN:

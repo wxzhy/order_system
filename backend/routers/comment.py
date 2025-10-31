@@ -104,13 +104,21 @@ async def list_comments(
 
     # 按用户名搜索（模糊搜索，需要关联User表）
     if user_name:
-        statement = statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
-        count_statement = count_statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+        statement = statement.join(User, Comment.user_id == User.id).where(
+            User.username.like(f"%{user_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(User, Comment.user_id == User.id).where(
+            User.username.like(f"%{user_name}%")
+        )  # type: ignore
 
     # 按商家名称搜索（模糊搜索，需要关联Store表）
     if store_name:
-        statement = statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
-        count_statement = count_statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        statement = statement.join(Store, Comment.store_id == Store.id).where(
+            Store.name.like(f"%{store_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(
+            Store, Comment.store_id == Store.id
+        ).where(Store.name.like(f"%{store_name}%"))  # type: ignore
 
     # 按评论内容搜索（模糊搜索）
     if content:
@@ -342,13 +350,21 @@ async def list_pending_comments(
 
     # 按用户名搜索（模糊搜索，需要关联User表）
     if user_name:
-        statement = statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
-        count_statement = count_statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+        statement = statement.join(User, Comment.user_id == User.id).where(
+            User.username.like(f"%{user_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(User, Comment.user_id == User.id).where(
+            User.username.like(f"%{user_name}%")
+        )  # type: ignore
 
     # 按商家名称搜索（模糊搜索，需要关联Store表）
     if store_name:
-        statement = statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
-        count_statement = count_statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        statement = statement.join(Store, Comment.store_id == Store.id).where(
+            Store.name.like(f"%{store_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(
+            Store, Comment.store_id == Store.id
+        ).where(Store.name.like(f"%{store_name}%"))  # type: ignore
 
     # 按评论内容搜索（模糊搜索）
     if content:

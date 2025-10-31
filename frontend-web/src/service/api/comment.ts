@@ -53,5 +53,5 @@ export function batchDeleteComment(ids: number[]) {
  * @param state - 审核状态: 'approved' | 'rejected'
  */
 export function reviewComment(id: number, state: 'approved' | 'rejected') {
-  return alova.Post<Api.SystemManage.Comment>(`/comment/${id}/review/`, { state });
+    return alova.Post<Api.SystemManage.Comment>(`/comment/${id}/review/`, { state });
 }

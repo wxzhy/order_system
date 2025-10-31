@@ -96,8 +96,12 @@ async def list_items(
 
     # 按商家名称搜索（模糊搜索，需要关联Store表）
     if store_name:
-        statement = statement.join(Store, Item.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
-        count_statement = count_statement.join(Store, Item.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        statement = statement.join(Store, Item.store_id == Store.id).where(
+            Store.name.like(f"%{store_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(Store, Item.store_id == Store.id).where(
+            Store.name.like(f"%{store_name}%")
+        )  # type: ignore
 
     # 按餐点名称搜索（模糊搜索）
     if item_name:
@@ -107,7 +111,9 @@ async def list_items(
     # 按描述搜索（模糊搜索）
     if description:
         statement = statement.where(Item.description.like(f"%{description}%"))  # type: ignore
-        count_statement = count_statement.where(Item.description.like(f"%{description}%"))  # type: ignore
+        count_statement = count_statement.where(
+            Item.description.like(f"%{description}%")
+        )  # type: ignore
 
     # 按价格范围筛选
     if min_price is not None:

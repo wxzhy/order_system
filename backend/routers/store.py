@@ -110,8 +110,12 @@ async def list_stores(
 
     # 按店主名搜索（需要关联User表）
     if owner_name:
-        statement = statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
-        count_statement = count_statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
+        statement = statement.join(User, Store.owner_id == User.id).where(
+            User.username.like(f"%{owner_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(User, Store.owner_id == User.id).where(
+            User.username.like(f"%{owner_name}%")
+        )  # type: ignore
 
     # 按店主ID筛选（用于管理后台，内部参数）
     if owner_id:
@@ -280,8 +284,12 @@ async def list_pending_stores(
 
     # 按店主名搜索（需要关联User表）
     if owner_name:
-        statement = statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
-        count_statement = count_statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
+        statement = statement.join(User, Store.owner_id == User.id).where(
+            User.username.like(f"%{owner_name}%")
+        )  # type: ignore
+        count_statement = count_statement.join(User, Store.owner_id == User.id).where(
+            User.username.like(f"%{owner_name}%")
+        )  # type: ignore
 
     # 获取总数
     total = session.exec(count_statement).one()
