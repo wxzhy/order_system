@@ -1,9 +1,9 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select
+from sqlmodel import select, Session
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentVendor
-from backend.models import Store, StoreState, UserType
+from backend.models import Store, StoreState, UserType, User
 from backend.schemas import (
     StoreCreate,
     StoreUpdate,
@@ -15,6 +15,16 @@ from backend.schemas import (
 )
 
 router = APIRouter(prefix="/store", tags=["商家管理"])
+
+
+def populate_store_response(store: Store, session: Session) -> StoreResponse:
+    """填充商家响应数据，添加店主名称"""
+    response = StoreResponse.model_validate(store)
+    # 查询店主信息
+    user = session.get(User, store.owner_id)
+    if user:
+        response.owner_name = user.username
+    return response
 
 
 @router.post("/", response_model=StoreResponse, status_code=status.HTTP_201_CREATED)
@@ -102,10 +112,13 @@ async def list_stores(
     statement = statement.offset(skip).limit(limit)
     stores = list(session.exec(statement).all())
 
+    # 填充商家响应数据
+    result = [populate_store_response(store, session) for store in stores]
+
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=stores, total=total, current=current, size=limit)
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
 @router.get("/my", response_model=StoreResponse)
@@ -240,10 +253,13 @@ async def list_pending_stores(
     statement = statement.offset(skip).limit(limit)
     stores = list(session.exec(statement).all())
 
+    # 填充商家响应数据
+    result = [populate_store_response(store, session) for store in stores]
+
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=stores, total=total, current=current, size=limit)
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
 @router.post("/{store_id}/review", response_model=StoreResponse)

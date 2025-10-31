@@ -1,6 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select
+from sqlmodel import select, Session
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentCustomer
 from backend.models import Comment, Store, CommentState, UserType, User
@@ -15,6 +15,23 @@ from backend.schemas import (
 )
 
 router = APIRouter(prefix="/comment", tags=["评论管理"])
+
+
+def populate_comment_response(comment: Comment, session: Session) -> CommentResponse:
+    """填充评论响应数据，包括用户名和商家名"""
+    comment_response = CommentResponse.model_validate(comment)
+
+    # 查询用户名
+    user = session.get(User, comment.user_id)
+    if user:
+        comment_response.user_name = user.username
+
+    # 查询商家名
+    store = session.get(Store, comment.store_id)
+    if store:
+        comment_response.store_name = store.name
+
+    return comment_response
 
 
 @router.post("/", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
@@ -45,7 +62,7 @@ async def create_comment(
     session.add(db_comment)
     session.commit()
     session.refresh(db_comment)
-    return db_comment
+    return populate_comment_response(db_comment, session)
 
 
 @router.get("/", response_model=PageResponse[CommentResponse])
@@ -95,10 +112,13 @@ async def list_comments(
     statement = statement.offset(skip).limit(limit)
     comments = list(session.exec(statement).all())
 
+    # 填充评论响应数据
+    result = [populate_comment_response(comment, session) for comment in comments]
+
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=comments, total=total, current=current, size=limit)
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
 @router.get("/store/{store_id}", response_model=PageResponse[CommentResponse])
@@ -135,7 +155,14 @@ async def list_store_comments(
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=comments, total=total, current=current, size=limit)
+    # 填充用户名和商家名
+    comments_with_names = [
+        populate_comment_response(comment, session) for comment in comments
+    ]
+
+    return PageResponse(
+        records=comments_with_names, total=total, current=current, size=limit
+    )
 
 
 @router.get("/my", response_model=PageResponse[CommentResponse])
@@ -165,7 +192,14 @@ async def get_my_comments(
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=comments, total=total, current=current, size=limit)
+    # 填充用户名和商家名
+    comments_with_names = [
+        populate_comment_response(comment, session) for comment in comments
+    ]
+
+    return PageResponse(
+        records=comments_with_names, total=total, current=current, size=limit
+    )
 
 
 @router.get("/{comment_id}", response_model=CommentResponse)
@@ -174,7 +208,7 @@ async def get_comment(comment_id: int, session: SessionDep):
     comment = session.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在")
-    return comment
+    return populate_comment_response(comment, session)
 
 
 @router.put("/{comment_id}", response_model=CommentResponse)
@@ -204,7 +238,7 @@ async def update_comment(
     session.add(comment)
     session.commit()
     session.refresh(comment)
-    return comment
+    return populate_comment_response(comment, session)
 
 
 @router.delete("/{comment_id}")
@@ -298,10 +332,13 @@ async def list_pending_comments(
     statement = statement.offset(skip).limit(limit)
     comments = list(session.exec(statement).all())
 
+    # 填充评论响应数据
+    result = [populate_comment_response(comment, session) for comment in comments]
+
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=comments, total=total, current=current, size=limit)
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
 @router.post("/{comment_id}/review", response_model=CommentResponse)
@@ -326,4 +363,4 @@ async def review_comment(
 
     # TODO: 发送审核结果通知给用户
 
-    return comment
+    return populate_comment_response(comment, session)

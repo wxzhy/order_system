@@ -85,6 +85,7 @@ declare namespace Api {
       publish_time: string;
       review_time: string | null;
       owner_id: number;
+      owner_name?: string; // 店主名称
     };
 
     /** store search params */
@@ -187,6 +188,7 @@ declare namespace Api {
       price: number;
       quantity: number;
       store_id: number;
+      store_name?: string; // 商家名称
     };
 
     /** item edit params */
@@ -245,7 +247,9 @@ declare namespace Api {
       review_time: string | null;
       state: OrderState;
       user_id: number;
+      user_name?: string; // 用户名称
       store_id: number;
+      store_name?: string; // 商家名称
       items: OrderItem[];
       total_amount?: number;
     };
@@ -286,11 +290,14 @@ declare namespace Api {
     type Comment = {
       id: number;
       content: string;
+      rating?: number; // 评分
       publish_time: string;
       review_time: string | null;
       state: CommentState;
       user_id: number;
+      user_name?: string; // 用户名称
       store_id: number;
+      store_name?: string; // 商家名称
     };
 
     /** comment update params */

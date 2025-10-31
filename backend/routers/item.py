@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select
+from sqlmodel import select, Session
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentVendor
 from backend.models import Item, Store, UserType, StoreState
@@ -13,6 +13,18 @@ from backend.schemas import (
 )
 
 router = APIRouter(prefix="/item", tags=["餐点管理"])
+
+
+def populate_item_response(item: Item, session: Session) -> ItemResponse:
+    """填充餐点响应数据，包括商家名"""
+    item_response = ItemResponse.model_validate(item)
+
+    # 查询商家名
+    store = session.get(Store, item.store_id)
+    if store:
+        item_response.store_name = store.name
+
+    return item_response
 
 
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
@@ -42,7 +54,7 @@ async def create_item(
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
-    return db_item
+    return populate_item_response(db_item, session)
 
 
 @router.get("/", response_model=PageResponse[ItemResponse])
@@ -100,10 +112,13 @@ async def list_items(
     statement = statement.offset(skip).limit(limit)
     items = list(session.exec(statement).all())
 
+    # 填充餐点响应数据
+    result = [populate_item_response(item, session) for item in items]
+
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=items, total=total, current=current, size=limit)
+    return PageResponse(records=result, total=total, current=current, size=limit)
 
 
 @router.get("/store/{store_id}", response_model=PageResponse[ItemResponse])
@@ -136,7 +151,12 @@ async def list_store_items(
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
-    return PageResponse(records=items, total=total, current=current, size=limit)
+    # 填充商家名
+    items_with_store_name = [populate_item_response(item, session) for item in items]
+
+    return PageResponse(
+        records=items_with_store_name, total=total, current=current, size=limit
+    )
 
 
 @router.get("/{item_id}", response_model=ItemResponse)
@@ -145,7 +165,7 @@ async def get_item(item_id: int, session: SessionDep):
     item = session.get(Item, item_id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
-    return item
+    return populate_item_response(item, session)
 
 
 @router.put("/{item_id}", response_model=ItemResponse)
@@ -179,7 +199,7 @@ async def update_item(
     session.add(item)
     session.commit()
     session.refresh(item)
-    return item
+    return populate_item_response(item, session)
 
 
 @router.delete("/{item_id}")

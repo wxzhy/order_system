@@ -46,7 +46,9 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
     { prop: 'id', label: '评论ID', width: 100, align: 'center' },
     { prop: 'user_id', label: '用户ID', width: 100, align: 'center' },
-    { prop: 'item_id', label: '商品ID', width: 100, align: 'center' },
+    { prop: 'user_name', label: '用户名', width: 120, align: 'center' },
+    { prop: 'store_id', label: '商家ID', width: 100, align: 'center' },
+    { prop: 'store_name', label: '商家名称', width: 150, align: 'center' },
     { prop: 'content', label: '评论内容', minWidth: 300, showOverflowTooltip: true },
     {
       prop: 'rating',

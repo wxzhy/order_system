@@ -46,12 +46,14 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
     { prop: 'id', label: '订单ID', width: 100, align: 'center' },
     { prop: 'user_id', label: '用户ID', width: 100, align: 'center' },
+    { prop: 'user_name', label: '用户名', width: 120, align: 'center' },
     { prop: 'store_id', label: '商家ID', width: 100, align: 'center' },
+    { prop: 'store_name', label: '商家名称', width: 150, align: 'center' },
     {
       prop: 'total_amount',
       label: '订单金额',
       width: 120,
-      align: 'right',
+      align: 'center',
       formatter: (row: Api.SystemManage.Order) => {
         if (row.total_amount !== undefined) {
           return `¥${row.total_amount.toFixed(2)}`;

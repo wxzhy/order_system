@@ -44,7 +44,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
   columns: () => [
     { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
     { prop: 'id', label: '商家ID', width: 100, align: 'center' },
-    { prop: 'name', label: '商家名称', width: 200 },
+    { prop: 'storeName', label: '商家名称', width: 200 },
     { prop: 'description', label: '描述', minWidth: 200, showOverflowTooltip: true },
     { prop: 'owner_name', label: '所有者', width: 120 },
     { prop: 'create_time', label: '创建时间', width: 180 },

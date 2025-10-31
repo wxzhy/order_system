@@ -23,8 +23,18 @@ router = APIRouter(prefix="/order", tags=["订单管理"])
 
 
 def populate_order_response(order: Order, session: Session) -> OrderResponse:
-    """填充订单响应数据，包括菜品名称和总金额"""
+    """填充订单响应数据，包括菜品名称、用户名、商家名和总金额"""
     order_response = OrderResponse.model_validate(order)
+
+    # 查询用户名
+    user = session.get(User, order.user_id)
+    if user:
+        order_response.user_name = user.username
+
+    # 查询商家名
+    store = session.get(Store, order.store_id)
+    if store:
+        order_response.store_name = store.name
 
     # 填充订单项的菜品名称
     items_with_names = []

@@ -66,13 +66,15 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                 return <span class="text-#ccc">暂无图片</span>;
             }
         },
+        { prop: 'store_id', label: '商家ID', width: 100, align: 'center' },
+        { prop: 'store_name', label: '商家名称', width: 150, align: 'center' },
         { prop: 'itemName', label: '餐点名称', minWidth: 150 },
         { prop: 'description', label: '描述', minWidth: 200 },
         {
             prop: 'price',
             label: '价格',
             width: 100,
-            align: 'right',
+            align: 'center',
             formatter: (row: Api.SystemManage.Item) => `¥${row.price.toFixed(2)}`
         },
         {
@@ -87,7 +89,6 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                 return <ElTag type="danger">缺货</ElTag>;
             }
         },
-        { prop: 'store_id', label: '商家ID', width: 100, align: 'center' },
         {
             prop: 'actions',
             label: $t('common.action'),
@@ -166,12 +167,13 @@ function resetSearchParams() {
         <ItemSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
         <ElCard class="sm:flex-1-hidden card-wrapper" :body-style="{ flex: 1, overflow: 'hidden' }">
             <template #header>
-                <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
-                    :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData">
-                    <template #default="{ size }">
-                        <p class="text-16px font-600 m-0 inline-block">餐点列表</p>
-                    </template>
-                </TableHeaderOperation>
+                <div class="flex justify-between items-center">
+                    <p class="text-16px font-600 m-0">餐点列表</p>
+                    <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
+                        :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData">
+                        <template #default><span></span></template>
+                    </TableHeaderOperation>
+                </div>
             </template>
             <ElTable v-loading="loading" :data="data" border stripe height="100%"
                 @selection-change="(rows: Api.SystemManage.Item[]) => (checkedRowKeys = rows.map(row => row.id))">

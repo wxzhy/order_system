@@ -48,7 +48,9 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
         { prop: 'id', label: '评论ID', width: 80, align: 'center' },
         { prop: 'user_id', label: '用户ID', width: 100, align: 'center' },
+        { prop: 'user_name', label: '用户名', width: 120, align: 'center' },
         { prop: 'store_id', label: '商家ID', width: 100, align: 'center' },
+        { prop: 'store_name', label: '商家名称', width: 150, align: 'center' },
         { prop: 'content', label: '评论内容', minWidth: 250 },
         {
             prop: 'state',
@@ -149,14 +151,14 @@ async function handleDelete(id: number) {
 }
 
 async function handleReview(id: number, approved: boolean) {
-  try {
-    const state = approved ? 'approved' : 'rejected';
-    await reviewComment(id, state);
-    window.$message?.success(approved ? '审核通过' : '已拒绝');
-    getData();
-  } catch (error: any) {
-    window.$message?.error(error?.message || '审核失败');
-  }
+    try {
+        const state = approved ? 'approved' : 'rejected';
+        await reviewComment(id, state);
+        window.$message?.success(approved ? '审核通过' : '已拒绝');
+        getData();
+    } catch (error: any) {
+        window.$message?.error(error?.message || '审核失败');
+    }
 }
 
 function resetSearchParams() {
@@ -169,12 +171,13 @@ function resetSearchParams() {
         <CommentSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
         <ElCard class="sm:flex-1-hidden card-wrapper" :body-style="{ flex: 1, overflow: 'hidden' }">
             <template #header>
-                <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
-                    :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData">
-                    <template #default="{ size }">
-                        <p class="text-16px font-600 m-0 inline-block">评论列表</p>
-                    </template>
-                </TableHeaderOperation>
+                <div class="flex justify-between items-center">
+                    <p class="text-16px font-600 m-0">评论列表</p>
+                    <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
+                        :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData">
+                        <template #default><span></span></template>
+                    </TableHeaderOperation>
+                </div>
             </template>
             <ElTable v-loading="loading" :data="data" border stripe height="100%"
                 @selection-change="(rows: Api.SystemManage.Comment[]) => (checkedRowKeys = rows.map(row => row.id))">

@@ -102,6 +102,7 @@ class StoreResponse(StoreBase):
     publish_time: datetime
     review_time: Optional[datetime] = None
     owner_id: int
+    owner_name: Optional[str] = None  # 店主名称
 
     class Config:
         from_attributes = True
@@ -137,6 +138,7 @@ class ItemUpdate(BaseModel):
 class ItemResponse(ItemBase):
     id: int
     store_id: int
+    store_name: Optional[str] = None  # 商家名称
 
     class Config:
         from_attributes = True
@@ -178,7 +180,9 @@ class OrderResponse(BaseModel):
     review_time: Optional[datetime] = None
     state: OrderState
     user_id: int
+    user_name: Optional[str] = None  # 用户名称
     store_id: int
+    store_name: Optional[str] = None  # 商家名称
     items: List[OrderItemResponse] = []
     total_amount: Optional[float] = None
 
@@ -206,6 +210,8 @@ class CommentResponse(CommentBase):
     review_time: Optional[datetime] = None
     state: CommentState
     user_id: int
+    user_name: Optional[str] = None  # 用户名称
+    store_name: Optional[str] = None  # 商家名称
 
     class Config:
         from_attributes = True
