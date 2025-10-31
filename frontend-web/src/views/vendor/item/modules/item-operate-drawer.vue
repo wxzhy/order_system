@@ -122,14 +122,7 @@ watch(visible, () => {
         <ElInput v-model="model.itemName" placeholder="请输入餐点名称" />
       </ElFormItem>
       <ElFormItem label="价格 (¥)" prop="price">
-        <ElInputNumber
-          v-model="model.price"
-          :min="0"
-          :precision="2"
-          :step="0.5"
-          placeholder="请输入价格"
-          class="w-full"
-        />
+        <ElInputNumber v-model="model.price" :min="0" :precision="2" :step="0.5" placeholder="请输入价格" class="w-full" />
       </ElFormItem>
       <ElFormItem label="库存数量" prop="quantity">
         <ElInputNumber v-model="model.quantity" :min="0" :step="1" placeholder="请输入库存数量" class="w-full" />

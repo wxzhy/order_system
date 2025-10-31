@@ -53,12 +53,8 @@ function search() {
             <ElCol :lg="6" :md="8" :sm="12">
               <ElFormItem label="库存状态" prop="in_stock">
                 <ElSelect v-model="model.in_stock" placeholder="请选择状态" clearable>
-                  <ElOption
-                    v-for="item in stockOptions"
-                    :key="String(item.value)"
-                    :label="item.label"
-                    :value="item.value"
-                  />
+                  <ElOption v-for="item in stockOptions" :key="String(item.value)" :label="item.label"
+                    :value="item.value" />
                 </ElSelect>
               </ElFormItem>
             </ElCol>

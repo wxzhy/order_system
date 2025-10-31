@@ -3,7 +3,7 @@ defineOptions({ name: 'VendorLayout' });
 </script>
 
 <template>
-  <div>
-    <RouterView />
-  </div>
+    <div>
+        <RouterView />
+    </div>
 </template>

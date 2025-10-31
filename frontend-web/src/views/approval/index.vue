@@ -3,7 +3,7 @@ defineOptions({ name: 'ApprovalLayout' });
 </script>
 
 <template>
-  <div>
-    <RouterView />
-  </div>
+    <div>
+        <RouterView />
+    </div>
 </template>

@@ -168,47 +168,24 @@ function resetSearchParams() {
       <template #header>
         <div class="flex items-center justify-between">
           <p class="m-0 text-16px font-600">餐点列表</p>
-          <TableHeaderOperation
-            v-model:columns="columnChecks"
-            :disabled-delete="checkedRowKeys.length === 0"
-            :loading="loading"
-            @add="handleAdd"
-            @delete="handleBatchDelete"
-            @refresh="getData"
-          />
+          <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
+            :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData" />
         </div>
       </template>
-      <ElTable
-        v-loading="loading"
-        :data="data"
-        border
-        stripe
-        height="100%"
-        @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))"
-      >
+      <ElTable v-loading="loading" :data="data" border stripe height="100%"
+        @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))">
         <template v-for="column in columns" :key="column.prop">
           <ElTableColumn v-if="!column.hidden" v-bind="column" />
         </template>
       </ElTable>
       <template #footer>
-        <ElPagination
-          v-model:current-page="mobilePagination.currentPage"
-          v-model:page-size="mobilePagination.pageSize"
-          :total="mobilePagination.total"
-          :page-sizes="[30, 50, 100]"
-          :background="true"
-          layout="total, prev, pager, next, sizes"
-          @current-change="getDataByPage"
-          @size-change="getDataByPage"
-        />
+        <ElPagination v-model:current-page="mobilePagination.currentPage" v-model:page-size="mobilePagination.pageSize"
+          :total="mobilePagination.total" :page-sizes="[30, 50, 100]" :background="true"
+          layout="total, prev, pager, next, sizes" @current-change="getDataByPage" @size-change="getDataByPage" />
       </template>
     </ElCard>
-    <ItemOperateDrawer
-      v-model:visible="drawerVisible"
-      :operate-type="operateType"
-      :row-data="editingData"
-      @submitted="getDataByPage"
-    />
+    <ItemOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
+      @submitted="getDataByPage" />
   </div>
 </template>
 
