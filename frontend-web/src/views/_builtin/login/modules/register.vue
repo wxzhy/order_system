@@ -99,20 +99,12 @@ async function handleSubmit() {
       <ElInput v-model="model.phone" :placeholder="$t('page.login.common.phonePlaceholder')" />
     </ElFormItem>
     <ElFormItem prop="password">
-      <ElInput
-        v-model="model.password"
-        type="password"
-        show-password-on="click"
-        :placeholder="$t('page.login.common.passwordPlaceholder')"
-      />
+      <ElInput v-model="model.password" type="password" show-password-on="click"
+        :placeholder="$t('page.login.common.passwordPlaceholder')" />
     </ElFormItem>
     <ElFormItem prop="confirmPassword">
-      <ElInput
-        v-model="model.confirmPassword"
-        type="password"
-        show-password-on="click"
-        :placeholder="$t('page.login.common.confirmPasswordPlaceholder')"
-      />
+      <ElInput v-model="model.confirmPassword" type="password" show-password-on="click"
+        :placeholder="$t('page.login.common.confirmPasswordPlaceholder')" />
     </ElFormItem>
     <ElSpace direction="vertical" :size="18" fill class="w-full">
       <ElButton type="primary" size="large" round block :loading="loading" @click="handleSubmit">
