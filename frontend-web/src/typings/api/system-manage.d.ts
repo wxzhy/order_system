@@ -29,37 +29,39 @@ declare namespace Api {
     type AllRole = Pick<Role, 'id' | 'roleName' | 'roleCode'>;
 
     /**
-     * user gender
+     * user type
      *
-     * - "1": "male"
-     * - "2": "female"
+     * - "customer": customer
+     * - "vendor": vendor
+     * - "admin": admin
      */
-    type UserGender = '1' | '2';
+    type UserType = 'customer' | 'vendor' | 'admin';
 
     /** user */
-    type User = Common.CommonRecord<{
-      /** user name */
-      userName: string;
-      /** user gender */
-      userGender: UserGender | undefined;
-      /** user nick name */
-      nickName: string;
-      /** user phone */
-      userPhone: string;
-      /** user email */
-      userEmail: string;
-      /** user role code collection */
-      userRoles: string[];
-    }>;
+    type User = {
+      id: number;
+      username: string;
+      email: string;
+      phone: string | null;
+      user_type: UserType;
+      create_time: string;
+    };
 
     /** user search params */
-    type UserSearchParams = CommonType.RecordNullable<
-      Pick<Api.SystemManage.User, 'userName' | 'userGender' | 'nickName' | 'userPhone' | 'userEmail' | 'status'> &
-        CommonSearchParams
-    >;
+    type UserSearchParams = {
+      skip?: number;
+      limit?: number;
+      user_type?: string;
+      search?: string;
+    };
 
-    /** user list */
-    type UserList = Common.PaginatingQueryRecord<User>;
+    /** user list - matches backend PageResponse */
+    type UserList = {
+      records: User[];
+      total: number;
+      current: number;
+      size: number;
+    };
 
     /**
      * menu type

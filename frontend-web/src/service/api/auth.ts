@@ -3,26 +3,33 @@ import { alova } from '../request';
 /**
  * Login
  *
- * @param userName User name
+ * @param username Username, email or phone
  * @param password Password
  */
-export function fetchLogin(userName: string, password: string) {
-  return alova.Post<Api.Auth.LoginToken>('/auth/login', { userName, password });
+export function fetchLogin(username: string, password: string) {
+  return alova.Post<Api.Auth.LoginToken>('/auth/login', { username, password });
 }
 
-/** Get user info */
+/**
+ * Get current user info
+ */
 export function fetchGetUserInfo() {
-  return alova.Get<Api.Auth.UserInfo>('/auth/getUserInfo');
+  return alova.Get<Api.Auth.UserInfo>('/auth/me');
 }
 
-/** Send captcha to target phone */
-export function sendCaptcha(phone: string) {
-  return alova.Post<null>('/auth/sendCaptcha', { phone });
-}
-
-/** Verify captcha */
-export function verifyCaptcha(phone: string, code: string) {
-  return alova.Post<null>('/auth/verifyCaptcha', { phone, code });
+/**
+ * Register new user
+ *
+ * @param userData User registration data
+ */
+export function fetchRegister(userData: {
+  username: string;
+  email: string;
+  password: string;
+  phone?: string;
+  user_type?: 'customer' | 'vendor' | 'admin';
+}) {
+  return alova.Post('/auth/register', userData);
 }
 
 /**
@@ -32,25 +39,12 @@ export function verifyCaptcha(phone: string, code: string) {
  */
 export function fetchRefreshToken(refreshToken: string) {
   return alova.Post<Api.Auth.LoginToken>(
-    '/auth/refreshToken',
-    { refreshToken },
+    '/auth/refresh',
+    { refresh_token: refreshToken },
     {
       meta: {
         authRole: 'refreshToken'
       }
     }
   );
-}
-
-/**
- * return custom backend error
- *
- * @param code error code
- * @param msg error message
- */
-export function fetchCustomBackendError(code: string, msg: string) {
-  return alova.Get('/auth/error', {
-    params: { code, msg },
-    shareRequest: false
-  });
 }

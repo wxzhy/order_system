@@ -18,8 +18,8 @@ interface FormModel {
 }
 
 const model = ref<FormModel>({
-  userName: 'Soybean',
-  password: '123456'
+  userName: 'admin',
+  password: 'admin123456'
 });
 
 const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
@@ -37,7 +37,7 @@ async function handleSubmit() {
   await authStore.login(model.value.userName, model.value.password);
 }
 
-type AccountKey = 'super' | 'admin' | 'user';
+type AccountKey = 'admin' | 'vendor' | 'customer';
 
 interface Account {
   key: AccountKey;
@@ -48,22 +48,22 @@ interface Account {
 
 const accounts = computed<Account[]>(() => [
   {
-    key: 'super',
-    label: $t('page.login.pwdLogin.superAdmin'),
-    userName: 'Super',
-    password: '123456'
-  },
-  {
     key: 'admin',
     label: $t('page.login.pwdLogin.admin'),
-    userName: 'Admin',
-    password: '123456'
+    userName: 'admin',
+    password: 'admin123456'
   },
   {
-    key: 'user',
+    key: 'vendor',
+    label: '商家账号',
+    userName: 'vendor_zhang',
+    password: 'password123'
+  },
+  {
+    key: 'customer',
     label: $t('page.login.pwdLogin.user'),
-    userName: 'User',
-    password: '123456'
+    userName: 'customer_ming',
+    password: 'password123'
   }
 ]);
 
@@ -78,12 +78,8 @@ async function handleAccountLogin(account: Account) {
       <ElInput v-model="model.userName" :placeholder="$t('page.login.common.userNamePlaceholder')" />
     </ElFormItem>
     <ElFormItem prop="password">
-      <ElInput
-        v-model="model.password"
-        type="password"
-        show-password-on="click"
-        :placeholder="$t('page.login.common.passwordPlaceholder')"
-      />
+      <ElInput v-model="model.password" type="password" show-password-on="click"
+        :placeholder="$t('page.login.common.passwordPlaceholder')" />
     </ElFormItem>
     <ElSpace direction="vertical" :size="24" class="w-full" fill>
       <div class="flex-y-center justify-between">
@@ -105,14 +101,8 @@ async function handleAccountLogin(account: Account) {
       </div>
       <ElDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.otherAccountLogin') }}</ElDivider>
       <div class="flex-center gap-12px">
-        <ElButton
-          v-for="item in accounts"
-          :key="item.key"
-          size="default"
-          type="primary"
-          :disabled="authStore.loginLoading"
-          @click="handleAccountLogin(item)"
-        >
+        <ElButton v-for="item in accounts" :key="item.key" size="default" type="primary"
+          :disabled="authStore.loginLoading" @click="handleAccountLogin(item)">
           {{ item.label }}
         </ElButton>
       </div>

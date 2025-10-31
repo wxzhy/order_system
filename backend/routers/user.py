@@ -5,6 +5,7 @@ from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin
 from backend.models import User
 from backend.schemas import (
     UserResponse,
+    UserCreate,
     UserUpdate,
     UserPasswordUpdate,
     UserPasswordReset,
@@ -99,6 +100,51 @@ async def delete_my_account(current_user: CurrentUser, session: SessionDep):
 
 
 # ============ 管理员功能 ============
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_create: UserCreate, session: SessionDep, current_admin: CurrentAdmin
+):
+    """管理员创建用户"""
+    # 检查用户名是否已存在
+    statement = select(User).where(User.username == user_create.username)
+    existing_user = session.exec(statement).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="用户名已存在"
+        )
+
+    # 检查邮箱是否已存在
+    statement = select(User).where(User.email == user_create.email)
+    existing_email = session.exec(statement).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱已被注册"
+        )
+
+    # 检查手机号是否已存在
+    if user_create.phone:
+        statement = select(User).where(User.phone == user_create.phone)
+        existing_phone = session.exec(statement).first()
+        if existing_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="手机号已被注册"
+            )
+
+    # 创建新用户
+    hashed_password = get_password_hash(user_create.password)
+    db_user = User(
+        username=user_create.username,
+        email=user_create.email,
+        phone=user_create.phone,
+        hashed_password=hashed_password,
+        user_type=user_create.user_type,
+    )
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    return db_user
+
+
 @router.get("/", response_model=PageResponse[UserResponse])
 async def list_users(
     session: SessionDep,

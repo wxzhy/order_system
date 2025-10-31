@@ -177,7 +177,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   /** Init auth route */
   async function initAuthRoute() {
     // check if user info is initialized
-    if (!authStore.userInfo.userId) {
+    if (!authStore.userInfo.id) {
       await authStore.initUserInfo();
     }
 
@@ -197,7 +197,9 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     if (authStore.isStaticSuper) {
       addAuthRoutes(staticAuthRoutes);
     } else {
-      const filteredAuthRoutes = filterAuthRoutesByRoles(staticAuthRoutes, authStore.userInfo.roles);
+      // 将 user_type 转换为数组格式以兼容现有的 filter 函数
+      const userRoles = authStore.userInfo.user_type ? [authStore.userInfo.user_type] : [];
+      const filteredAuthRoutes = filterAuthRoutesByRoles(staticAuthRoutes, userRoles);
 
       addAuthRoutes(filteredAuthRoutes);
     }

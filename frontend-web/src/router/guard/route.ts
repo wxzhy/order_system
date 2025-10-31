@@ -35,7 +35,9 @@ export function createRouteGuard(router: Router) {
     const needLogin = !to.meta.constant;
     const routeRoles = to.meta.roles || [];
 
-    const hasRole = authStore.userInfo.roles.some(role => routeRoles.includes(role));
+    // 检查用户类型权限 (使用 user_type 而不是 roles 数组)
+    const userType = authStore.userInfo.user_type;
+    const hasRole = routeRoles.length === 0 || routeRoles.includes(userType);
     const hasAuth = authStore.isStaticSuper || !routeRoles.length || hasRole;
 
     // if it is login route when logged in, then switch to the root page

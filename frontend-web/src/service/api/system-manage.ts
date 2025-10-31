@@ -1,5 +1,41 @@
 import { alova } from '../request';
 
+/** get user list */
+export function fetchGetUserList(params?: { skip?: number; limit?: number; user_type?: string; search?: string }) {
+  return alova.Get<Api.SystemManage.UserList>('/user/', { params });
+}
+
+export type UserModel = {
+  username?: string;
+  email?: string;
+  phone?: string;
+  password?: string;
+  user_type?: string;
+};
+
+/** add user - 管理员功能 (需要单独实现) */
+export function addUser(data: UserModel) {
+  return alova.Post<Api.Auth.UserInfo>('/user/', data);
+}
+
+/** update user */
+export function updateUser(id: number, data: UserModel) {
+  return alova.Put<Api.Auth.UserInfo>(`/user/${id}/`, data);
+}
+
+/** delete user */
+export function deleteUser(id: number) {
+  return alova.Delete<null>(`/user/${id}/`);
+}
+
+/** batch delete user */
+export function batchDeleteUser(ids: number[]) {
+  return alova.Post<{ success_count: number; failed_count: number; failed_ids: number[]; message: string }>(
+    '/user/batch-delete/',
+    { ids }
+  );
+}
+
 /** get role list */
 export function fetchGetRoleList(params?: Api.SystemManage.RoleSearchParams) {
   return alova.Get<Api.SystemManage.RoleList>('/systemManage/getRoleList', { params });
@@ -12,35 +48,6 @@ export function fetchGetRoleList(params?: Api.SystemManage.RoleSearchParams) {
  */
 export function fetchGetAllRoles() {
   return alova.Get<Api.SystemManage.AllRole[]>('/systemManage/getAllRoles');
-}
-
-/** get user list */
-export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
-  return alova.Get<Api.SystemManage.UserList>('/systemManage/getUserList', { params });
-}
-
-export type UserModel = Pick<
-  Api.SystemManage.User,
-  'userName' | 'userGender' | 'nickName' | 'userPhone' | 'userEmail' | 'userRoles' | 'status'
->;
-/** add user */
-export function addUser(data: UserModel) {
-  return alova.Post<null>('/systemManage/addUser', data);
-}
-
-/** update user */
-export function updateUser(data: UserModel) {
-  return alova.Post<null>('/systemManage/updateUser', data);
-}
-
-/** delete user */
-export function deleteUser(id: number) {
-  return alova.Delete<null>('/systemManage/deleteUser', { id });
-}
-
-/** batch delete user */
-export function batchDeleteUser(ids: number[]) {
-  return alova.Delete<null>('/systemManage/batchDeleteUser', { ids });
 }
 
 /** get menu list */
