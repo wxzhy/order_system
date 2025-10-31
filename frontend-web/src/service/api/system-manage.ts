@@ -36,6 +36,13 @@ export function batchDeleteUser(ids: number[]) {
   );
 }
 
+/** reset user password - 管理员重置用户密码 */
+export function resetUserPassword(id: number, newPassword: string = '123456') {
+  return alova.Put<{ message: string }>(`/user/${id}/reset-password/`, undefined, {
+    params: { new_password: newPassword }
+  });
+}
+
 /** get role list */
 export function fetchGetRoleList(params?: Api.SystemManage.RoleSearchParams) {
   return alova.Get<Api.SystemManage.RoleList>('/systemManage/getRoleList', { params });

@@ -63,7 +63,7 @@ const rules = computed(() => {
     user_type: [defaultRequiredRule]
   };
 
-  // 新增时密码必填,编辑时密码可选
+  // 新增时密码必填
   if (props.operateType === 'add') {
     baseRules.password = [defaultRequiredRule];
   }
@@ -115,11 +115,6 @@ async function handleSubmit() {
         user_type: model.value.user_type
       };
 
-      // 只有填写了密码才更新密码
-      if (model.value.password) {
-        updateData.password = model.value.password;
-      }
-
       await updateUser(props.rowData.id, updateData);
       window.$message?.success('更新成功');
     }
@@ -151,9 +146,8 @@ watch(visible, () => {
       <ElFormItem label="手机号" prop="phone">
         <ElInput v-model="model.phone" placeholder="请输入手机号(可选)" />
       </ElFormItem>
-      <ElFormItem :label="operateType === 'add' ? '密码' : '密码(留空不修改)'" prop="password">
-        <ElInput v-model="model.password" type="password" show-password
-          :placeholder="operateType === 'add' ? '请输入密码' : '留空则不修改密码'" />
+      <ElFormItem v-if="operateType === 'add'" label="密码" prop="password">
+        <ElInput v-model="model.password" type="password" show-password placeholder="请输入密码" />
       </ElFormItem>
       <ElFormItem label="用户类型" prop="user_type">
         <ElSelect v-model="model.user_type" placeholder="请选择用户类型">

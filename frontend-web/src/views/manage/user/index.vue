@@ -6,6 +6,7 @@ import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import UserOperateDrawer from './modules/user-operate-drawer.vue';
 import UserSearch from './modules/user-search.vue';
+import UserResetPassword from './modules/user-reset-password.vue';
 
 defineOptions({ name: 'UserManage' });
 
@@ -73,11 +74,14 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
       prop: 'operate',
       label: $t('common.operate'),
       align: 'center',
-      width: 200,
+      width: 280,
       formatter: row => (
         <div class="flex-center gap-8px">
           <ElButton type="primary" plain size="small" onClick={() => edit(row.id)}>
             {$t('common.edit')}
+          </ElButton>
+          <ElButton type="warning" plain size="small" onClick={() => handleResetPassword(row.id, row.username)}>
+            重置密码
           </ElButton>
           <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
             {{
@@ -107,6 +111,22 @@ const {
 
 // 存储选中的行数据
 const selectedRows = ref<Api.SystemManage.User[]>([]);
+
+// 重置密码相关
+const resetPasswordVisible = ref(false);
+const resetPasswordUserId = ref<number | null>(null);
+const resetPasswordUsername = ref('');
+
+function handleResetPassword(id: number, username: string) {
+  resetPasswordUserId.value = id;
+  resetPasswordUsername.value = username;
+  resetPasswordVisible.value = true;
+}
+
+function onPasswordReset() {
+  window.$message?.success('密码重置成功');
+  getData();
+}
 
 async function handleBatchDelete() {
   if (selectedRows.value.length === 0) {
@@ -167,6 +187,8 @@ function edit(id: number) {
       </div>
       <UserOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
         @submitted="getDataByPage" />
+      <UserResetPassword v-model:visible="resetPasswordVisible" :user-id="resetPasswordUserId"
+        :username="resetPasswordUsername" @success="onPasswordReset" />
     </ElCard>
   </div>
 </template>
