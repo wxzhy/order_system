@@ -60,7 +60,7 @@ function onLoadMore() {
 }
 
 function viewStoreDetail(store: IStore) {
-  uni.navigateTo({ url: `/pages-sub/store/detail?id=${store.id}` })
+  uni.navigateTo({ url: `/pages/store/info?id=${store.id}` })
 }
 
 onLoad(() => {
