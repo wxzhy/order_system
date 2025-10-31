@@ -52,6 +52,7 @@ class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, min_length=1, max_length=100)
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=50)
+    user_type: Optional[str] = Field(None, pattern="^(customer|vendor|admin)$")
 
 
 class UserPasswordUpdate(BaseModel):

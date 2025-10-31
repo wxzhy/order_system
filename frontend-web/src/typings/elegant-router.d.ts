@@ -39,6 +39,10 @@ declare module "@elegant-router/types" {
     "alova_request": "/alova/request";
     "alova_scenes": "/alova/scenes";
     "alova_user": "/alova/user";
+    "approval": "/approval";
+    "approval_comment": "/approval/comment";
+    "approval_order": "/approval/order";
+    "approval_store": "/approval/store";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -96,6 +100,10 @@ declare module "@elegant-router/types" {
     "plugin_typeit": "/plugin/typeit";
     "plugin_video": "/plugin/video";
     "user-center": "/user-center";
+    "vendor": "/vendor";
+    "vendor_item": "/vendor/item";
+    "vendor_order": "/vendor/order";
+    "vendor_register": "/vendor/register";
   };
 
   /**
@@ -146,6 +154,7 @@ declare module "@elegant-router/types" {
     | "500"
     | "about"
     | "alova"
+    | "approval"
     | "function"
     | "home"
     | "iframe-page"
@@ -154,6 +163,7 @@ declare module "@elegant-router/types" {
     | "multi-menu"
     | "plugin"
     | "user-center"
+    | "vendor"
   >;
 
   /**
@@ -181,6 +191,10 @@ declare module "@elegant-router/types" {
     | "alova_request"
     | "alova_scenes"
     | "alova_user"
+    | "approval_comment"
+    | "approval"
+    | "approval_order"
+    | "approval_store"
     | "function_hide-child_one"
     | "function_hide-child_three"
     | "function_hide-child_two"
@@ -224,6 +238,10 @@ declare module "@elegant-router/types" {
     | "plugin_typeit"
     | "plugin_video"
     | "user-center"
+    | "vendor"
+    | "vendor_item"
+    | "vendor_order"
+    | "vendor_register"
   >;
 
   /**

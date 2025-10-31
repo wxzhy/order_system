@@ -1,12 +1,12 @@
 import { alova } from '../request';
 
 /**
- * 获取餐点列表
- *
- * @param params - 搜索参数
- */
-export function fetchGetItemList(params?: Api.SystemManage.ItemSearchParams) {
-    return alova.Get<Api.SystemManage.ItemList>('/item/', { params });
+/** get item list */
+export function fetchGetItemList(params?: ItemSearchParams) {
+  return alova.Get<Api.SystemManage.ItemList>('/item', {
+    params,
+    cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
+  });
 }
 
 /**
@@ -15,7 +15,7 @@ export function fetchGetItemList(params?: Api.SystemManage.ItemSearchParams) {
  * @param data - 餐点数据
  */
 export function addItem(data: Api.SystemManage.ItemEdit) {
-    return alova.Post<Api.SystemManage.Item>('/item/', data);
+  return alova.Post<Api.SystemManage.Item>('/item', data);
 }
 
 /**
@@ -25,7 +25,7 @@ export function addItem(data: Api.SystemManage.ItemEdit) {
  * @param data - 餐点数据
  */
 export function updateItem(id: number, data: Api.SystemManage.ItemEdit) {
-    return alova.Put<Api.SystemManage.Item>(`/item/${id}/`, data);
+  return alova.Put<Api.SystemManage.Item>(`/item/${id}`, data);
 }
 
 /**
@@ -34,7 +34,7 @@ export function updateItem(id: number, data: Api.SystemManage.ItemEdit) {
  * @param id - 餐点ID
  */
 export function deleteItem(id: number) {
-    return alova.Delete(`/item/${id}/`);
+  return alova.Delete(`/item/${id}`);
 }
 
 /**
@@ -43,5 +43,5 @@ export function deleteItem(id: number) {
  * @param ids - 餐点ID列表
  */
 export function batchDeleteItem(ids: number[]) {
-    return alova.Post<Api.SystemManage.BatchDeleteResponse>('/item/batch-delete/', { ids });
+  return alova.Post<Api.SystemManage.BatchDeleteResponse>('/item/batch-delete', { ids });
 }

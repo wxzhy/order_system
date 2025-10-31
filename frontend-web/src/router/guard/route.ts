@@ -69,6 +69,13 @@ export function createRouteGuard(router: Router) {
       return;
     }
 
+    // check vendor registration
+    const vendorLocation = checkVendorRegistration(to, authStore, rootRoute);
+    if (vendorLocation) {
+      next(vendorLocation);
+      return;
+    }
+
     // switch route normally
     handleRouteSwitch(to, from, next);
   });
@@ -163,6 +170,38 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
     };
 
     return location;
+  }
+
+  return null;
+}
+
+/**
+ * check if vendor user needs to register store info
+ *
+ * @param to to route
+ * @param authStore auth store instance
+ * @param rootRoute root route key
+ */
+function checkVendorRegistration(
+  to: RouteLocationNormalized,
+  authStore: ReturnType<typeof useAuthStore>,
+  rootRoute: RouteKey
+): RouteLocationRaw | null {
+  const vendorRegisterRoute: RouteKey = 'vendor_register';
+  const userType = authStore.userInfo.user_type;
+  const isVendorUser = userType === 'vendor';
+  const hasStoreInfo = authStore.userInfo.store_id !== null && authStore.userInfo.store_id !== undefined;
+  const isVendorRegisterPage = to.name === vendorRegisterRoute;
+  const isVendorRoute = String(to.path).startsWith('/vendor');
+
+  // 如果是商家用户,没有注册商家信息,且不是在注册页面,则跳转到注册页面
+  if (isVendorUser && !hasStoreInfo && !isVendorRegisterPage && isVendorRoute) {
+    return { name: vendorRegisterRoute };
+  }
+
+  // 如果是商家用户,已有商家信息,正在访问注册页面,则跳转到首页
+  if (isVendorUser && hasStoreInfo && isVendorRegisterPage) {
+    return { name: rootRoute };
   }
 
   return null;

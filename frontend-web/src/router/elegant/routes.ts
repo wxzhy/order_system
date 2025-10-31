@@ -98,6 +98,44 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'approval',
+    path: '/approval',
+    component: 'layout.base',
+    meta: {
+      title: 'approval',
+      i18nKey: 'route.approval'
+    },
+    children: [
+      {
+        name: 'approval_comment',
+        path: '/approval/comment',
+        component: 'view.approval_comment',
+        meta: {
+          title: 'approval_comment',
+          i18nKey: 'route.approval_comment'
+        }
+      },
+      {
+        name: 'approval_order',
+        path: '/approval/order',
+        component: 'view.approval_order',
+        meta: {
+          title: 'approval_order',
+          i18nKey: 'route.approval_order'
+        }
+      },
+      {
+        name: 'approval_store',
+        path: '/approval/store',
+        component: 'view.approval_store',
+        meta: {
+          title: 'approval_store',
+          i18nKey: 'route.approval_store'
+        }
+      }
+    ]
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',
@@ -736,5 +774,43 @@ export const generatedRoutes: GeneratedRoute[] = [
       i18nKey: 'route.user-center',
       hideInMenu: true
     }
+  },
+  {
+    name: 'vendor',
+    path: '/vendor',
+    component: 'layout.base',
+    meta: {
+      title: 'vendor',
+      i18nKey: 'route.vendor'
+    },
+    children: [
+      {
+        name: 'vendor_item',
+        path: '/vendor/item',
+        component: 'view.vendor_item',
+        meta: {
+          title: 'vendor_item',
+          i18nKey: 'route.vendor_item'
+        }
+      },
+      {
+        name: 'vendor_order',
+        path: '/vendor/order',
+        component: 'view.vendor_order',
+        meta: {
+          title: 'vendor_order',
+          i18nKey: 'route.vendor_order'
+        }
+      },
+      {
+        name: 'vendor_register',
+        path: '/vendor/register',
+        component: 'view.vendor_register',
+        meta: {
+          title: 'vendor_register',
+          i18nKey: 'route.vendor_register'
+        }
+      }
+    ]
   }
 ];

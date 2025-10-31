@@ -6,7 +6,10 @@ import { alova } from '../request';
  * @param params - 搜索参数
  */
 export function fetchGetOrderList(params?: Api.SystemManage.OrderSearchParams) {
-    return alova.Get<Api.SystemManage.OrderList>('/order/', { params });
+  return alova.Get<Api.SystemManage.OrderList>('/order', {
+    params,
+    cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
+  });
 }
 
 /**
@@ -15,7 +18,7 @@ export function fetchGetOrderList(params?: Api.SystemManage.OrderSearchParams) {
  * @param id - 订单ID
  */
 export function getOrder(id: number) {
-    return alova.Get<Api.SystemManage.Order>(`/order/${id}/`);
+  return alova.Get<Api.SystemManage.Order>(`/order/${id}`);
 }
 
 /**
@@ -25,7 +28,7 @@ export function getOrder(id: number) {
  * @param data - 订单数据
  */
 export function updateOrder(id: number, data: Api.SystemManage.OrderUpdate) {
-    return alova.Put<Api.SystemManage.Order>(`/order/${id}/`, data);
+  return alova.Put<Api.SystemManage.Order>(`/order/${id}`, data);
 }
 
 /**
@@ -34,7 +37,7 @@ export function updateOrder(id: number, data: Api.SystemManage.OrderUpdate) {
  * @param id - 订单ID
  */
 export function deleteOrder(id: number) {
-    return alova.Delete(`/order/${id}/`);
+  return alova.Delete(`/order/${id}`);
 }
 
 /**
@@ -43,5 +46,5 @@ export function deleteOrder(id: number) {
  * @param ids - 订单ID列表
  */
 export function batchDeleteOrder(ids: number[]) {
-    return alova.Post<Api.SystemManage.BatchDeleteResponse>('/order/batch-delete/', { ids });
+  return alova.Post<Api.SystemManage.BatchDeleteResponse>('/order/batch-delete', { ids });
 }
