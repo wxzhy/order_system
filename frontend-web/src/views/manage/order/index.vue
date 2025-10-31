@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { reactive } from 'vue';
 import { ElButton, ElPopconfirm, ElTag } from 'element-plus';
-import { batchDeleteOrder, deleteOrder, fetchGetOrderList } from '@/service/api';
+import { batchDeleteOrder, deleteOrder, fetchGetOrderList, updateOrder } from '@/service/api';
 import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import OrderOperateDrawer from './modules/order-operate-drawer.vue';
@@ -85,7 +85,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         {
             prop: 'actions',
             label: $t('common.action'),
-            width: 200,
+            width: 320,
             fixed: 'right',
             align: 'center',
             formatter: (row: Api.SystemManage.Order) => (
@@ -93,6 +93,16 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                     <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
                         {$t('common.edit')}
                     </ElButton>
+                    {row.state === 'pending' && (
+                        <>
+                            <ElButton type="success" plain size="small" onClick={() => handleApprove(row.id, 'approved')}>
+                                批准
+                            </ElButton>
+                            <ElButton type="warning" plain size="small" onClick={() => handleApprove(row.id, 'cancelled')}>
+                                拒绝
+                            </ElButton>
+                        </>
+                    )}
                     <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
                         {{
                             reference: () => (
@@ -147,6 +157,16 @@ async function handleDelete(id: number) {
         onDeleted();
     } catch (error: any) {
         window.$message?.error(error?.message || '删除失败');
+    }
+}
+
+async function handleApprove(id: number, state: 'approved' | 'cancelled') {
+    try {
+        await updateOrder(id, { state });
+        window.$message?.success(state === 'approved' ? '已批准' : '已拒绝');
+        getData();
+    } catch (error: any) {
+        window.$message?.error(error?.message || '审批失败');
     }
 }
 

@@ -262,6 +262,54 @@ export const generatedRoutes: GeneratedRoute[] = [
     },
     children: [
       {
+        name: 'manage_approval',
+        path: '/manage/approval',
+        component: 'view.manage_approval',
+        meta: {
+          title: 'manage_approval',
+          i18nKey: 'route.manage_approval',
+          icon: 'mdi:clipboard-check-outline',
+          order: 7,
+          roles: ['admin']
+        }
+      },
+      {
+        name: 'manage_approval-comment',
+        path: '/manage/approval-comment',
+        component: 'view.manage_approval-comment',
+        meta: {
+          title: 'manage_approval-comment',
+          i18nKey: 'route.manage_approval-comment',
+          icon: 'mdi:comment-check-outline',
+          order: 9,
+          roles: ['admin']
+        }
+      },
+      {
+        name: 'manage_approval-order',
+        path: '/manage/approval-order',
+        component: 'view.manage_approval-order',
+        meta: {
+          title: 'manage_approval-order',
+          i18nKey: 'route.manage_approval-order',
+          icon: 'mdi:receipt-text-check-outline',
+          order: 8,
+          roles: ['admin']
+        }
+      },
+      {
+        name: 'manage_approval-store',
+        path: '/manage/approval-store',
+        component: 'view.manage_approval-store',
+        meta: {
+          title: 'manage_approval-store',
+          i18nKey: 'route.manage_approval-store',
+          icon: 'mdi:store-check-outline',
+          order: 7,
+          roles: ['admin']
+        }
+      },
+      {
         name: 'manage_comment',
         path: '/manage/comment',
         component: 'view.manage_comment',

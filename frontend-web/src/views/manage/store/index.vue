@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { reactive, ref } from 'vue';
 import { ElButton, ElPopconfirm, ElTag } from 'element-plus';
-import { batchDeleteStore, deleteStore, fetchGetStoreList } from '@/service/api';
+import { batchDeleteStore, deleteStore, fetchGetStoreList, reviewStore } from '@/service/api';
 import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import StoreOperateDrawer from './modules/store-operate-drawer.vue';
@@ -67,11 +67,21 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         {
             prop: 'actions',
             label: $t('common.action'),
-            width: 200,
+            width: 320,
             fixed: 'right',
             align: 'center',
             formatter: (row: Api.SystemManage.Store) => (
                 <div class="flex-center gap-8px">
+                    {row.state === 'pending' && (
+                        <>
+                            <ElButton type="success" plain size="small" onClick={() => handleReview(row.id, 'approved')}>
+                                批准
+                            </ElButton>
+                            <ElButton type="warning" plain size="small" onClick={() => handleReview(row.id, 'rejected')}>
+                                拒绝
+                            </ElButton>
+                        </>
+                    )}
                     <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
                         {$t('common.edit')}
                     </ElButton>
@@ -129,6 +139,16 @@ async function handleDelete(id: number) {
         onDeleted();
     } catch (error: any) {
         window.$message?.error(error?.message || '删除失败');
+    }
+}
+
+async function handleReview(id: number, state: 'approved' | 'rejected') {
+    try {
+        await reviewStore(id, { state });
+        window.$message?.success(state === 'approved' ? '已批准' : '已拒绝');
+        getData();
+    } catch (error: any) {
+        window.$message?.error(error?.message || '审批失败');
     }
 }
 

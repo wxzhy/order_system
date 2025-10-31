@@ -149,13 +149,14 @@ async function handleDelete(id: number) {
 }
 
 async function handleReview(id: number, approved: boolean) {
-    try {
-        await reviewComment(id, approved);
-        window.$message?.success(approved ? '审核通过' : '已拒绝');
-        getData();
-    } catch (error: any) {
-        window.$message?.error(error?.message || '审核失败');
-    }
+  try {
+    const state = approved ? 'approved' : 'rejected';
+    await reviewComment(id, state);
+    window.$message?.success(approved ? '审核通过' : '已拒绝');
+    getData();
+  } catch (error: any) {
+    window.$message?.error(error?.message || '审核失败');
+  }
 }
 
 function resetSearchParams() {
