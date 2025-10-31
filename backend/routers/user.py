@@ -9,6 +9,8 @@ from backend.schemas import (
     UserPasswordUpdate,
     UserPasswordReset,
     PageResponse,
+    BatchDeleteRequest,
+    BatchDeleteResponse,
 )
 from backend.security import verify_password, get_password_hash
 
@@ -194,6 +196,48 @@ async def delete_user(user_id: int, session: SessionDep, current_admin: CurrentA
     session.delete(user)
     session.commit()
     return {"message": "用户已删除"}
+
+
+@router.post("/batch-delete", response_model=BatchDeleteResponse)
+async def batch_delete_users(
+    batch_request: BatchDeleteRequest, session: SessionDep, current_admin: CurrentAdmin
+):
+    """管理员批量删除用户"""
+    success_count = 0
+    failed_count = 0
+    failed_ids = []
+
+    for user_id in batch_request.ids:
+        try:
+            user = session.get(User, user_id)
+            if user:
+                # 防止删除管理员自己
+                if user.id == current_admin.id:
+                    failed_count += 1
+                    failed_ids.append(user_id)
+                    continue
+
+                session.delete(user)
+                success_count += 1
+            else:
+                failed_count += 1
+                failed_ids.append(user_id)
+        except Exception:
+            failed_count += 1
+            failed_ids.append(user_id)
+            # 如果发生错误，回滚当前事务
+            session.rollback()
+
+    # 提交所有成功的删除操作
+    if success_count > 0:
+        session.commit()
+
+    return BatchDeleteResponse(
+        success_count=success_count,
+        failed_count=failed_count,
+        failed_ids=failed_ids,
+        message=f"成功删除 {success_count} 个用户，失败 {failed_count} 个",
+    )
 
 
 @router.put("/{user_id}/reset-password")

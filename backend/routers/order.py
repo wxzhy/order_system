@@ -9,7 +9,14 @@ from backend.dependencies import (
     CurrentCustomer,
 )
 from backend.models import Order, OrderItem, Item, Store, OrderState, UserType, User
-from backend.schemas import OrderCreate, OrderUpdate, OrderResponse, PageResponse
+from backend.schemas import (
+    OrderCreate,
+    OrderUpdate,
+    OrderResponse,
+    PageResponse,
+    BatchDeleteRequest,
+    BatchDeleteResponse,
+)
 
 router = APIRouter(prefix="/order", tags=["订单管理"])
 
@@ -422,3 +429,65 @@ async def delete_order(order_id: int, session: SessionDep, current_user: Current
     session.delete(order)
     session.commit()
     return {"message": "订单已删除"}
+
+
+@router.post("/batch-delete", response_model=BatchDeleteResponse)
+async def batch_delete_orders(
+    batch_request: BatchDeleteRequest, session: SessionDep, current_user: CurrentUser
+):
+    """批量删除订单（管理员或用户删除自己的待审核订单）"""
+    success_count = 0
+    failed_count = 0
+    failed_ids = []
+
+    for order_id in batch_request.ids:
+        try:
+            order = session.get(Order, order_id)
+            if not order:
+                failed_count += 1
+                failed_ids.append(order_id)
+                continue
+
+            # 验证权限
+            if current_user.user_type == UserType.CUSTOMER:
+                # 普通用户只能删除自己的待审核订单
+                if order.user_id != current_user.id:
+                    failed_count += 1
+                    failed_ids.append(order_id)
+                    continue
+                if order.state != OrderState.PENDING:
+                    failed_count += 1
+                    failed_ids.append(order_id)
+                    continue
+
+                # 恢复库存
+                for order_item in order.items:
+                    item = session.get(Item, order_item.item_id)
+                    if item:
+                        item.quantity += order_item.quantity
+                        session.add(item)
+
+            elif current_user.user_type != UserType.ADMIN:
+                # 商家不能删除订单
+                failed_count += 1
+                failed_ids.append(order_id)
+                continue
+
+            session.delete(order)
+            success_count += 1
+        except Exception:
+            failed_count += 1
+            failed_ids.append(order_id)
+            # 如果发生错误，回滚当前事务
+            session.rollback()
+
+    # 提交所有成功的删除操作
+    if success_count > 0:
+        session.commit()
+
+    return BatchDeleteResponse(
+        success_count=success_count,
+        failed_count=failed_count,
+        failed_ids=failed_ids,
+        message=f"成功删除 {success_count} 个订单，失败 {failed_count} 个",
+    )

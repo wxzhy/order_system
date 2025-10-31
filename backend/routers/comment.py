@@ -10,6 +10,8 @@ from backend.schemas import (
     CommentResponse,
     CommentReview,
     PageResponse,
+    BatchDeleteRequest,
+    BatchDeleteResponse,
 )
 
 router = APIRouter(prefix="/comment", tags=["评论管理"])
@@ -223,6 +225,52 @@ async def delete_comment(
     session.delete(comment)
     session.commit()
     return {"message": "评论已删除"}
+
+
+@router.post("/batch-delete", response_model=BatchDeleteResponse)
+async def batch_delete_comments(
+    batch_request: BatchDeleteRequest, session: SessionDep, current_user: CurrentUser
+):
+    """批量删除评论（管理员或评论作者）"""
+    success_count = 0
+    failed_count = 0
+    failed_ids = []
+
+    for comment_id in batch_request.ids:
+        try:
+            comment = session.get(Comment, comment_id)
+            if not comment:
+                failed_count += 1
+                failed_ids.append(comment_id)
+                continue
+
+            # 验证权限：只有评论作者本人或管理员可以删除
+            if (
+                comment.user_id != current_user.id
+                and current_user.user_type != UserType.ADMIN
+            ):
+                failed_count += 1
+                failed_ids.append(comment_id)
+                continue
+
+            session.delete(comment)
+            success_count += 1
+        except Exception:
+            failed_count += 1
+            failed_ids.append(comment_id)
+            # 如果发生错误，回滚当前事务
+            session.rollback()
+
+    # 提交所有成功的删除操作
+    if success_count > 0:
+        session.commit()
+
+    return BatchDeleteResponse(
+        success_count=success_count,
+        failed_count=failed_count,
+        failed_ids=failed_ids,
+        message=f"成功删除 {success_count} 个评论，失败 {failed_count} 个",
+    )
 
 
 # ============ 管理员功能 ============

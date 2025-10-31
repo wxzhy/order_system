@@ -3,7 +3,14 @@ from sqlmodel import select
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentVendor
 from backend.models import Item, Store, UserType, StoreState
-from backend.schemas import ItemCreate, ItemUpdate, ItemResponse, PageResponse
+from backend.schemas import (
+    ItemCreate,
+    ItemUpdate,
+    ItemResponse,
+    PageResponse,
+    BatchDeleteRequest,
+    BatchDeleteResponse,
+)
 
 router = APIRouter(prefix="/item", tags=["餐点管理"])
 
@@ -198,3 +205,56 @@ async def delete_item(item_id: int, current_user: CurrentUser, session: SessionD
     session.delete(item)
     session.commit()
     return {"message": "餐点已删除"}
+
+
+@router.post("/batch-delete", response_model=BatchDeleteResponse)
+async def batch_delete_items(
+    batch_request: BatchDeleteRequest, session: SessionDep, current_user: CurrentUser
+):
+    """批量删除餐点（商家或管理员）"""
+    success_count = 0
+    failed_count = 0
+    failed_ids = []
+
+    for item_id in batch_request.ids:
+        try:
+            item = session.get(Item, item_id)
+            if not item:
+                failed_count += 1
+                failed_ids.append(item_id)
+                continue
+
+            # 获取商家信息验证权限
+            store = session.get(Store, item.store_id)
+            if not store:
+                failed_count += 1
+                failed_ids.append(item_id)
+                continue
+
+            # 验证权限：只有商家本人或管理员可以删除
+            if (
+                current_user.user_type != UserType.ADMIN
+                and store.owner_id != current_user.id
+            ):
+                failed_count += 1
+                failed_ids.append(item_id)
+                continue
+
+            session.delete(item)
+            success_count += 1
+        except Exception:
+            failed_count += 1
+            failed_ids.append(item_id)
+            # 如果发生错误，回滚当前事务
+            session.rollback()
+
+    # 提交所有成功的删除操作
+    if success_count > 0:
+        session.commit()
+
+    return BatchDeleteResponse(
+        success_count=success_count,
+        failed_count=failed_count,
+        failed_ids=failed_ids,
+        message=f"成功删除 {success_count} 个餐点，失败 {failed_count} 个",
+    )

@@ -10,6 +10,8 @@ from backend.schemas import (
     StoreResponse,
     StoreReview,
     PageResponse,
+    BatchDeleteRequest,
+    BatchDeleteResponse,
 )
 
 router = APIRouter(prefix="/store", tags=["商家管理"])
@@ -177,6 +179,42 @@ async def delete_store(store_id: int, current_user: CurrentUser, session: Sessio
     session.delete(store)
     session.commit()
     return {"message": "商家信息已删除"}
+
+
+@router.post("/batch-delete", response_model=BatchDeleteResponse)
+async def batch_delete_stores(
+    batch_request: BatchDeleteRequest, session: SessionDep, current_admin: CurrentAdmin
+):
+    """管理员批量删除商家"""
+    success_count = 0
+    failed_count = 0
+    failed_ids = []
+
+    for store_id in batch_request.ids:
+        try:
+            store = session.get(Store, store_id)
+            if store:
+                session.delete(store)
+                success_count += 1
+            else:
+                failed_count += 1
+                failed_ids.append(store_id)
+        except Exception:
+            failed_count += 1
+            failed_ids.append(store_id)
+            # 如果发生错误，回滚当前事务
+            session.rollback()
+
+    # 提交所有成功的删除操作
+    if success_count > 0:
+        session.commit()
+
+    return BatchDeleteResponse(
+        success_count=success_count,
+        failed_count=failed_count,
+        failed_ids=failed_ids,
+        message=f"成功删除 {success_count} 个商家，失败 {failed_count} 个",
+    )
 
 
 # ============ 管理员功能 ============

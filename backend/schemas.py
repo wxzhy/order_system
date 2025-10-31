@@ -20,6 +20,22 @@ class PageResponse(BaseModel, Generic[T]):
         from_attributes = True
 
 
+# ============ Generic Batch Delete Request ============
+class BatchDeleteRequest(BaseModel):
+    """通用批量删除请求模型"""
+
+    ids: List[int] = Field(..., min_length=1, description="要删除的ID列表")
+
+
+class BatchDeleteResponse(BaseModel):
+    """批量删除响应模型"""
+
+    success_count: int = Field(..., description="成功删除的数量")
+    failed_count: int = Field(default=0, description="删除失败的数量")
+    failed_ids: List[int] = Field(default_factory=list, description="删除失败的ID列表")
+    message: str = Field(..., description="操作结果消息")
+
+
 # ============ User Schemas ============
 class UserBase(BaseModel):
     username: str = Field(..., min_length=1, max_length=100)
