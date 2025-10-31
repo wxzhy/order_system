@@ -262,6 +262,30 @@ export const generatedRoutes: GeneratedRoute[] = [
     },
     children: [
       {
+        name: 'manage_comment',
+        path: '/manage/comment',
+        component: 'view.manage_comment',
+        meta: {
+          title: 'manage_comment',
+          i18nKey: 'route.manage_comment',
+          icon: 'mdi:comment-text-outline',
+          order: 6,
+          roles: ['admin']
+        }
+      },
+      {
+        name: 'manage_item',
+        path: '/manage/item',
+        component: 'view.manage_item',
+        meta: {
+          title: 'manage_item',
+          i18nKey: 'route.manage_item',
+          icon: 'mdi:food',
+          order: 4,
+          roles: ['admin']
+        }
+      },
+      {
         name: 'manage_menu',
         path: '/manage/menu',
         component: 'view.manage_menu',
@@ -275,6 +299,18 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'manage_order',
+        path: '/manage/order',
+        component: 'view.manage_order',
+        meta: {
+          title: 'manage_order',
+          i18nKey: 'route.manage_order',
+          icon: 'mdi:receipt-text-outline',
+          order: 5,
+          roles: ['admin']
+        }
+      },
+      {
         name: 'manage_role',
         path: '/manage/role',
         component: 'view.manage_role',
@@ -283,6 +319,18 @@ export const generatedRoutes: GeneratedRoute[] = [
           i18nKey: 'route.manage_role',
           icon: 'carbon:user-role',
           order: 2,
+          roles: ['admin']
+        }
+      },
+      {
+        name: 'manage_store',
+        path: '/manage/store',
+        component: 'view.manage_store',
+        meta: {
+          title: 'manage_store',
+          i18nKey: 'route.manage_store',
+          icon: 'mdi:store',
+          order: 3,
           roles: ['admin']
         }
       },
