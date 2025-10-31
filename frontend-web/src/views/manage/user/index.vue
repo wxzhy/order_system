@@ -171,24 +171,50 @@ function edit(id: number) {
       <template #header>
         <div class="flex items-center justify-between">
           <p>{{ $t('page.manage.user.title') }}</p>
-          <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="selectedRows.length === 0"
-            :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData" />
+          <TableHeaderOperation
+            v-model:columns="columnChecks"
+            :disabled-delete="selectedRows.length === 0"
+            :loading="loading"
+            @add="handleAdd"
+            @delete="handleBatchDelete"
+            @refresh="getData"
+          />
         </div>
       </template>
       <div class="h-[calc(100%-50px)]">
-        <ElTable v-loading="loading" height="100%" border class="sm:h-full" :data="data" row-key="id"
-          @selection-change="selectedRows = $event">
+        <ElTable
+          v-loading="loading"
+          height="100%"
+          border
+          class="sm:h-full"
+          :data="data"
+          row-key="id"
+          @selection-change="selectedRows = $event"
+        >
           <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
         </ElTable>
       </div>
       <div class="mt-20px flex justify-end">
-        <ElPagination v-if="mobilePagination.total" layout="total,prev,pager,next,sizes" v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']" @size-change="mobilePagination['size-change']" />
+        <ElPagination
+          v-if="mobilePagination.total"
+          layout="total,prev,pager,next,sizes"
+          v-bind="mobilePagination"
+          @current-change="mobilePagination['current-change']"
+          @size-change="mobilePagination['size-change']"
+        />
       </div>
-      <UserOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
-        @submitted="getDataByPage" />
-      <UserResetPassword v-model:visible="resetPasswordVisible" :user-id="resetPasswordUserId"
-        :username="resetPasswordUsername" @success="onPasswordReset" />
+      <UserOperateDrawer
+        v-model:visible="drawerVisible"
+        :operate-type="operateType"
+        :row-data="editingData"
+        @submitted="getDataByPage"
+      />
+      <UserResetPassword
+        v-model:visible="resetPasswordVisible"
+        :user-id="resetPasswordUserId"
+        :username="resetPasswordUsername"
+        @success="onPasswordReset"
+      />
     </ElCard>
   </div>
 </template>

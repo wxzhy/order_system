@@ -93,7 +93,10 @@ declare namespace Api {
       skip?: number;
       limit?: number;
       state?: string;
-      search?: string;
+      name?: string;
+      owner_name?: string;
+      address?: string;
+      phone?: string;
     };
 
     /** store list - matches backend PageResponse */
@@ -199,7 +202,9 @@ declare namespace Api {
       skip?: number;
       limit?: number;
       store_id?: number;
-      search?: string;
+      store_name?: string;
+      item_name?: string;
+      description?: string;
       min_price?: number;
       max_price?: number;
       in_stock?: boolean;
@@ -264,7 +269,8 @@ declare namespace Api {
       skip?: number;
       limit?: number;
       state?: OrderState | string;
-      search?: string;
+      user_name?: string;
+      store_name?: string;
       store_id?: number;
       user_id?: number;
     };
@@ -311,7 +317,9 @@ declare namespace Api {
       skip?: number;
       limit?: number;
       state?: CommentState | string;
-      search?: string;
+      user_name?: string;
+      store_name?: string;
+      content?: string;
       store_id?: number;
       user_id?: number;
     };

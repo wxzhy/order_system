@@ -151,12 +151,13 @@ async def list_orders(
     skip: int = 0,
     limit: int = 100,
     state: OrderState | None = None,
-    search: str | None = None,
+    user_name: str | None = None,
+    store_name: str | None = None,
     store_id: int | None = None,
     user_id: int | None = None,
 ):
     """查询订单列表（支持搜索）"""
-    from sqlalchemy import func, or_
+    from sqlalchemy import func
 
     statement = select(Order)
     count_statement = select(func.count()).select_from(Order)
@@ -182,25 +183,25 @@ async def list_orders(
         statement = statement.where(Order.state == state)
         count_statement = count_statement.where(Order.state == state)
 
-    # 按商家ID筛选（仅管理员）
+    # 按用户名搜索（模糊搜索，需要关联User表）
+    if user_name:
+        statement = statement.join(User, Order.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+        count_statement = count_statement.join(User, Order.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+
+    # 按商家名称搜索（模糊搜索，需要关联Store表）
+    if store_name:
+        statement = statement.join(Store, Order.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        count_statement = count_statement.join(Store, Order.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+
+    # 按商家ID筛选（仅管理员，内部参数）
     if store_id and current_user.user_type == UserType.ADMIN:
         statement = statement.where(Order.store_id == store_id)
         count_statement = count_statement.where(Order.store_id == store_id)
 
-    # 按用户ID筛选（仅管理员）
+    # 按用户ID筛选（仅管理员，内部参数）
     if user_id and current_user.user_type == UserType.ADMIN:
         statement = statement.where(Order.user_id == user_id)
         count_statement = count_statement.where(Order.user_id == user_id)
-
-    # 搜索功能：通过关联的商家名称或用户名搜索
-    if search:
-        # 需要关联 Store 和 User 表进行搜索
-        search_condition = or_(
-            Store.name.like(f"%{search}%"),  # type: ignore
-            User.username.like(f"%{search}%"),  # type: ignore
-        )
-        statement = statement.join(Store).join(User).where(search_condition)
-        count_statement = count_statement.join(Store).join(User).where(search_condition)
 
     # 获取总数
     total = session.exec(count_statement).one()

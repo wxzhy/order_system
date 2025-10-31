@@ -14,7 +14,10 @@ export type StoreSearchParams = {
     skip?: number;
     limit?: number;
     state?: string;
-    search?: string;
+    name?: string;
+    owner_name?: string;
+    address?: string;
+    phone?: string;
 };
 
 /** get store list */

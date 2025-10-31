@@ -42,18 +42,18 @@ function search() {
         <ElForm :model="model" label-position="right" :label-width="80">
           <ElRow :gutter="24">
             <ElCol :lg="6" :md="8" :sm="12">
-              <ElFormItem label="搜索" prop="search">
-                <ElInput v-model="model.search" placeholder="评论内容" clearable />
+              <ElFormItem label="用户名" prop="user_name">
+                <ElInput v-model="model.user_name" placeholder="请输入用户名" clearable />
               </ElFormItem>
             </ElCol>
             <ElCol :lg="6" :md="8" :sm="12">
-              <ElFormItem label="商家ID" prop="store_id">
-                <ElInputNumber v-model="model.store_id" :controls="false" placeholder="请输入商家ID" class="w-full" />
+              <ElFormItem label="商家名称" prop="store_name">
+                <ElInput v-model="model.store_name" placeholder="请输入商家名称" clearable />
               </ElFormItem>
             </ElCol>
             <ElCol :lg="6" :md="8" :sm="12">
-              <ElFormItem label="用户ID" prop="user_id">
-                <ElInputNumber v-model="model.user_id" :controls="false" placeholder="请输入用户ID" class="w-full" />
+              <ElFormItem label="评论内容" prop="content">
+                <ElInput v-model="model.content" placeholder="请输入评论内容" clearable />
               </ElFormItem>
             </ElCol>
             <ElCol :lg="6" :md="24" :sm="24">
@@ -80,4 +80,3 @@ function search() {
 </template>
 
 <style scoped></style>
-

@@ -15,8 +15,10 @@ function getInitSearchParams() {
     skip: 0,
     limit: 30,
     state: 'pending' as const,
-    search: undefined,
-    owner_id: undefined
+    name: undefined,
+    owner_name: undefined,
+    address: undefined,
+    phone: undefined
   };
 }
 
@@ -103,8 +105,13 @@ function resetSearchParams() {
         </ElTable>
       </div>
       <div class="mt-20px flex justify-end">
-        <ElPagination v-if="mobilePagination.total" layout="total,prev,pager,next,sizes" v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']" @size-change="mobilePagination['size-change']" />
+        <ElPagination
+          v-if="mobilePagination.total"
+          layout="total,prev,pager,next,sizes"
+          v-bind="mobilePagination"
+          @current-change="mobilePagination['current-change']"
+          @size-change="mobilePagination['size-change']"
+        />
       </div>
     </ElCard>
   </div>

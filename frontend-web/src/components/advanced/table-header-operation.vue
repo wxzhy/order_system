@@ -5,10 +5,11 @@ defineOptions({ name: 'TableHeaderOperation' });
 
 interface Props {
   disabledDelete?: boolean;
+  disabledAdd?: boolean;
   loading?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 interface Emits {
   (e: 'add'): void;
@@ -39,7 +40,7 @@ function refresh() {
   <ElSpace direction="horizontal" wrap justify="end" class="lt-sm:w-200px">
     <slot name="prefix"></slot>
     <slot name="default">
-      <ElButton plain type="primary" @click="add">
+      <ElButton v-if="!props.disabledAdd" plain type="primary" @click="add">
         <template #icon>
           <icon-ic-round-plus class="text-icon" />
         </template>
@@ -47,7 +48,7 @@ function refresh() {
       </ElButton>
       <ElPopconfirm :title="$t('common.confirmDelete')" @confirm="batchDelete">
         <template #reference>
-          <ElButton type="danger" plain :disabled="disabledDelete">
+          <ElButton type="danger" plain :disabled="props.disabledDelete">
             <template #icon>
               <icon-ic-round-delete class="text-icon" />
             </template>
@@ -58,7 +59,7 @@ function refresh() {
     </slot>
     <ElButton @click="refresh">
       <template #icon>
-        <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />
+        <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': props.loading }" />
       </template>
       {{ $t('common.refresh') }}
     </ElButton>

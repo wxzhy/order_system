@@ -15,7 +15,8 @@ function getInitSearchParams() {
     skip: 0,
     limit: 30,
     state: 'pending' as const,
-    search: undefined,
+    user_name: undefined,
+    store_name: undefined,
     store_id: undefined,
     user_id: undefined
   };
@@ -44,11 +45,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
   },
   columns: () => [
     { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
-    { prop: 'id', label: '订单ID', width: 100, align: 'center' },
-    { prop: 'user_id', label: '用户ID', width: 100, align: 'center' },
-    { prop: 'user_name', label: '用户名', width: 120, align: 'center' },
-    { prop: 'store_id', label: '商家ID', width: 100, align: 'center' },
-    { prop: 'store_name', label: '商家名称', width: 150, align: 'center' },
+    { prop: 'user_name', label: '用户名', width: 120 },
+    { prop: 'store_name', label: '商家名称', width: 150 },
     {
       prop: 'total_amount',
       label: '订单金额',
@@ -117,8 +115,13 @@ function resetSearchParams() {
         </ElTable>
       </div>
       <div class="mt-20px flex justify-end">
-        <ElPagination v-if="mobilePagination.total" layout="total,prev,pager,next,sizes" v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']" @size-change="mobilePagination['size-change']" />
+        <ElPagination
+          v-if="mobilePagination.total"
+          layout="total,prev,pager,next,sizes"
+          v-bind="mobilePagination"
+          @current-change="mobilePagination['current-change']"
+          @size-change="mobilePagination['size-change']"
+        />
       </div>
     </ElCard>
   </div>

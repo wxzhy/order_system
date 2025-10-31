@@ -45,8 +45,12 @@ function search() {
             <ElCol :lg="6" :md="8" :sm="12">
               <ElFormItem label="用户类型" prop="user_type">
                 <ElSelect v-model="model.user_type" clearable placeholder="请选择用户类型">
-                  <ElOption v-for="item in userTypeOptions" :key="item.value" :label="item.label" :value="item.value">
-                  </ElOption>
+                  <ElOption
+                    v-for="item in userTypeOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value"
+                  ></ElOption>
                 </ElSelect>
               </ElFormItem>
             </ElCol>

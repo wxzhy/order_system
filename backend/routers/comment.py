@@ -71,19 +71,27 @@ async def list_comments(
     skip: int = 0,
     limit: int = 100,
     store_id: int | None = None,
+    user_id: int | None = None,
     state: CommentState | None = None,
-    search: str | None = None,
+    user_name: str | None = None,
+    store_name: str | None = None,
+    content: str | None = None,
 ):
     """查询评论列表（默认只显示审核通过的，支持搜索）"""
-    from sqlalchemy import func, or_
+    from sqlalchemy import func
 
     statement = select(Comment)
     count_statement = select(func.count()).select_from(Comment)
 
-    # 按商家筛选
+    # 按商家筛选（内部参数）
     if store_id:
         statement = statement.where(Comment.store_id == store_id)
         count_statement = count_statement.where(Comment.store_id == store_id)
+
+    # 按用户筛选（内部参数）
+    if user_id:
+        statement = statement.where(Comment.user_id == user_id)
+        count_statement = count_statement.where(Comment.user_id == user_id)
 
     # 按状态筛选
     if state:
@@ -94,16 +102,20 @@ async def list_comments(
         statement = statement.where(Comment.state == CommentState.APPROVED)
         count_statement = count_statement.where(Comment.state == CommentState.APPROVED)
 
-    # 搜索功能：通过评论内容、商家名称或用户名搜索
-    if search:
-        # 需要关联 Store 和 User 表进行搜索
-        search_condition = or_(
-            Comment.content.like(f"%{search}%"),  # type: ignore
-            Store.name.like(f"%{search}%"),  # type: ignore
-            User.username.like(f"%{search}%"),  # type: ignore
-        )
-        statement = statement.join(Store).join(User).where(search_condition)
-        count_statement = count_statement.join(Store).join(User).where(search_condition)
+    # 按用户名搜索（模糊搜索，需要关联User表）
+    if user_name:
+        statement = statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+        count_statement = count_statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+
+    # 按商家名称搜索（模糊搜索，需要关联Store表）
+    if store_name:
+        statement = statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        count_statement = count_statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+
+    # 按评论内容搜索（模糊搜索）
+    if content:
+        statement = statement.where(Comment.content.like(f"%{content}%"))  # type: ignore
+        count_statement = count_statement.where(Comment.content.like(f"%{content}%"))  # type: ignore
 
     # 获取总数
     total = session.exec(count_statement).one()
@@ -314,6 +326,9 @@ async def list_pending_comments(
     current_admin: CurrentAdmin,
     skip: int = 0,
     limit: int = 100,
+    user_name: str | None = None,
+    store_name: str | None = None,
+    content: str | None = None,
 ):
     """管理员查询待审核的评论列表"""
     from sqlalchemy import func
@@ -324,6 +339,21 @@ async def list_pending_comments(
         .select_from(Comment)
         .where(Comment.state == CommentState.PENDING)
     )
+
+    # 按用户名搜索（模糊搜索，需要关联User表）
+    if user_name:
+        statement = statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+        count_statement = count_statement.join(User, Comment.user_id == User.id).where(User.username.like(f"%{user_name}%"))  # type: ignore
+
+    # 按商家名称搜索（模糊搜索，需要关联Store表）
+    if store_name:
+        statement = statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        count_statement = count_statement.join(Store, Comment.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+
+    # 按评论内容搜索（模糊搜索）
+    if content:
+        statement = statement.where(Comment.content.like(f"%{content}%"))  # type: ignore
+        count_statement = count_statement.where(Comment.content.like(f"%{content}%"))  # type: ignore
 
     # 获取总数
     total = session.exec(count_statement).one()

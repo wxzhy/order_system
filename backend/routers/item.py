@@ -60,33 +60,54 @@ async def create_item(
 @router.get("/", response_model=PageResponse[ItemResponse])
 async def list_items(
     session: SessionDep,
+    current_user: CurrentUser,
     skip: int = 0,
     limit: int = 100,
     store_id: int | None = None,
-    search: str | None = None,
+    store_name: str | None = None,
+    item_name: str | None = None,
+    description: str | None = None,
     min_price: float | None = None,
     max_price: float | None = None,
     in_stock: bool | None = None,
 ):
     """查询餐点列表（支持多条件搜索和筛选）"""
-    from sqlalchemy import func, or_
+    from sqlalchemy import func
 
     statement = select(Item)
     count_statement = select(func.count()).select_from(Item)
 
-    # 按商家筛选
-    if store_id:
+    # 商家用户只能查询自己的餐点
+    if current_user.user_type == UserType.VENDOR:
+        # 查询商家的店铺ID
+        store_statement = select(Store).where(Store.owner_id == current_user.id)
+        store = session.exec(store_statement).first()
+        if store:
+            statement = statement.where(Item.store_id == store.id)
+            count_statement = count_statement.where(Item.store_id == store.id)
+        else:
+            # 如果商家没有店铺，返回空列表
+            return PageResponse(records=[], total=0, current=1, size=limit)
+
+    # 按商家ID筛选（内部参数，管理员可用）
+    if store_id and current_user.user_type == UserType.ADMIN:
         statement = statement.where(Item.store_id == store_id)
         count_statement = count_statement.where(Item.store_id == store_id)
 
-    # 按餐点名称或描述搜索
-    if search:
-        search_condition = or_(
-            Item.name.like(f"%{search}%"),  # type: ignore
-            Item.description.like(f"%{search}%") if Item.description else False,  # type: ignore
-        )
-        statement = statement.where(search_condition)
-        count_statement = count_statement.where(search_condition)
+    # 按商家名称搜索（模糊搜索，需要关联Store表）
+    if store_name:
+        statement = statement.join(Store, Item.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+        count_statement = count_statement.join(Store, Item.store_id == Store.id).where(Store.name.like(f"%{store_name}%"))  # type: ignore
+
+    # 按餐点名称搜索（模糊搜索）
+    if item_name:
+        statement = statement.where(Item.name.like(f"%{item_name}%"))  # type: ignore
+        count_statement = count_statement.where(Item.name.like(f"%{item_name}%"))  # type: ignore
+
+    # 按描述搜索（模糊搜索）
+    if description:
+        statement = statement.where(Item.description.like(f"%{description}%"))  # type: ignore
+        count_statement = count_statement.where(Item.description.like(f"%{description}%"))  # type: ignore
 
     # 按价格范围筛选
     if min_price is not None:

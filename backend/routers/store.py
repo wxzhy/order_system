@@ -71,11 +71,14 @@ async def list_stores(
     skip: int = 0,
     limit: int = 100,
     state: StoreState | None = None,
-    search: str | None = None,
+    name: str | None = None,
+    owner_name: str | None = None,
+    address: str | None = None,
+    phone: str | None = None,
     owner_id: int | None = None,
 ):
     """查询商家列表（所有用户可见，支持搜索）"""
-    from sqlalchemy import func, or_
+    from sqlalchemy import func
 
     statement = select(Store)
     count_statement = select(func.count()).select_from(Store)
@@ -90,17 +93,27 @@ async def list_stores(
         statement = statement.where(Store.state == StoreState.APPROVED)
         count_statement = count_statement.where(Store.state == StoreState.APPROVED)
 
-    # 按商家名称或描述搜索
-    if search:
-        search_condition = or_(
-            Store.name.like(f"%{search}%"),  # type: ignore
-            Store.description.like(f"%{search}%") if Store.description else False,  # type: ignore
-            Store.address.like(f"%{search}%"),  # type: ignore
-        )
-        statement = statement.where(search_condition)
-        count_statement = count_statement.where(search_condition)
+    # 按商家名称搜索（模糊搜索）
+    if name:
+        statement = statement.where(Store.name.like(f"%{name}%"))  # type: ignore
+        count_statement = count_statement.where(Store.name.like(f"%{name}%"))  # type: ignore
 
-    # 按店主ID筛选（用于管理后台）
+    # 按地址搜索（模糊搜索）
+    if address:
+        statement = statement.where(Store.address.like(f"%{address}%"))  # type: ignore
+        count_statement = count_statement.where(Store.address.like(f"%{address}%"))  # type: ignore
+
+    # 按电话搜索（模糊搜索）
+    if phone:
+        statement = statement.where(Store.phone.like(f"%{phone}%"))  # type: ignore
+        count_statement = count_statement.where(Store.phone.like(f"%{phone}%"))  # type: ignore
+
+    # 按店主名搜索（需要关联User表）
+    if owner_name:
+        statement = statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
+        count_statement = count_statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
+
+    # 按店主ID筛选（用于管理后台，内部参数）
     if owner_id:
         statement = statement.where(Store.owner_id == owner_id)
         count_statement = count_statement.where(Store.owner_id == owner_id)
@@ -237,6 +250,10 @@ async def list_pending_stores(
     current_admin: CurrentAdmin,
     skip: int = 0,
     limit: int = 100,
+    name: str | None = None,
+    owner_name: str | None = None,
+    address: str | None = None,
+    phone: str | None = None,
 ):
     """管理员查询待审核的商家列表"""
     from sqlalchemy import func
@@ -245,6 +262,26 @@ async def list_pending_stores(
     count_statement = (
         select(func.count()).select_from(Store).where(Store.state == StoreState.PENDING)
     )
+
+    # 按商家名称搜索（模糊搜索）
+    if name:
+        statement = statement.where(Store.name.like(f"%{name}%"))  # type: ignore
+        count_statement = count_statement.where(Store.name.like(f"%{name}%"))  # type: ignore
+
+    # 按地址搜索（模糊搜索）
+    if address:
+        statement = statement.where(Store.address.like(f"%{address}%"))  # type: ignore
+        count_statement = count_statement.where(Store.address.like(f"%{address}%"))  # type: ignore
+
+    # 按电话搜索（模糊搜索）
+    if phone:
+        statement = statement.where(Store.phone.like(f"%{phone}%"))  # type: ignore
+        count_statement = count_statement.where(Store.phone.like(f"%{phone}%"))  # type: ignore
+
+    # 按店主名搜索（需要关联User表）
+    if owner_name:
+        statement = statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
+        count_statement = count_statement.join(User, Store.owner_id == User.id).where(User.username.like(f"%{owner_name}%"))  # type: ignore
 
     # 获取总数
     total = session.exec(count_statement).one()
