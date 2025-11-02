@@ -18,6 +18,32 @@ export function fetchGetUserInfo() {
 }
 
 /**
+ * Update current user profile
+ *
+ * @param userData User profile data to update
+ */
+export function fetchUpdateProfile(userData: {
+  username?: string;
+  email?: string;
+  phone?: string;
+}) {
+  return alova.Put<Api.Auth.UserInfo>('/auth/me', userData);
+}
+
+/**
+ * Change current user password
+ *
+ * @param oldPassword Current password
+ * @param newPassword New password
+ */
+export function fetchChangePassword(oldPassword: string, newPassword: string) {
+  return alova.Put<{ message: string }>('/auth/me/password', {
+    old_password: oldPassword,
+    new_password: newPassword
+  });
+}
+
+/**
  * Register new user
  *
  * @param userData User registration data

@@ -7,7 +7,15 @@ from sqlmodel import select
 
 from backend.dependencies import SessionDep, CurrentUser
 from backend.models import User
-from backend.schemas import Token, LoginRequest, UserCreate, UserResponse, TokenRefresh
+from backend.schemas import (
+    Token,
+    LoginRequest,
+    UserCreate,
+    UserResponse,
+    TokenRefresh,
+    UserUpdate,
+    UserPasswordUpdate,
+)
 from backend.security import (
     verify_password,
     get_password_hash,
@@ -170,3 +178,69 @@ async def refresh_token(token_data: TokenRefresh, session: SessionDep):
 async def get_current_user_info(current_user: CurrentUser):
     """获取当前登录用户信息"""
     return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_current_user_profile(
+    user_update: UserUpdate, current_user: CurrentUser, session: SessionDep
+):
+    """更新当前登录用户的个人信息"""
+    # 检查用户名是否被其他用户使用
+    if user_update.username:
+        statement = select(User).where(
+            (User.username == user_update.username) & (User.id != current_user.id)
+        )
+        existing_user = session.exec(statement).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="用户名已被使用"
+            )
+        current_user.username = user_update.username
+
+    # 检查邮箱是否被其他用户使用
+    if user_update.email:
+        statement = select(User).where(
+            (User.email == user_update.email) & (User.id != current_user.id)
+        )
+        existing_email = session.exec(statement).first()
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱已被使用"
+            )
+        current_user.email = user_update.email
+
+    # 检查手机号是否被其他用户使用
+    if user_update.phone:
+        statement = select(User).where(
+            (User.phone == user_update.phone) & (User.id != current_user.id)
+        )
+        existing_phone = session.exec(statement).first()
+        if existing_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="手机号已被使用"
+            )
+        current_user.phone = user_update.phone
+
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+    return current_user
+
+
+@router.put("/me/password")
+async def change_current_user_password(
+    password_update: UserPasswordUpdate, current_user: CurrentUser, session: SessionDep
+):
+    """修改当前登录用户的密码"""
+    # 验证旧密码
+    if not verify_password(password_update.old_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="当前密码不正确"
+        )
+
+    # 更新密码
+    current_user.hashed_password = get_password_hash(password_update.new_password)
+    session.add(current_user)
+    session.commit()
+
+    return {"message": "密码修改成功"}
