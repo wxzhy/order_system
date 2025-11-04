@@ -98,6 +98,52 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'approval',
+    path: '/approval',
+    component: 'layout.base',
+    meta: {
+      title: 'approval',
+      i18nKey: 'route.approval',
+      icon: 'mdi:clipboard-check-outline',
+      order: 2
+    },
+    children: [
+      {
+        name: 'approval_comment',
+        path: '/approval/comment',
+        component: 'view.approval_comment',
+        meta: {
+          title: 'approval_comment',
+          i18nKey: 'route.approval_comment',
+          icon: 'mdi:comment-check-outline',
+          order: 3
+        }
+      },
+      {
+        name: 'approval_order',
+        path: '/approval/order',
+        component: 'view.approval_order',
+        meta: {
+          title: 'approval_order',
+          i18nKey: 'route.approval_order',
+          icon: 'mdi:receipt-text-check-outline',
+          order: 2
+        }
+      },
+      {
+        name: 'approval_store',
+        path: '/approval/store',
+        component: 'view.approval_store',
+        meta: {
+          title: 'approval_store',
+          i18nKey: 'route.approval_store',
+          icon: 'mdi:store-check-outline',
+          order: 1
+        }
+      }
+    ]
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',
@@ -228,52 +274,6 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
-    name: 'approval',
-    path: '/approval',
-    component: 'layout.base',
-    meta: {
-      title: 'approval',
-      i18nKey: 'route.approval',
-      icon: 'mdi:clipboard-check-outline',
-      order: 2
-    },
-    children: [
-      {
-        name: 'approval_store',
-        path: '/approval/store',
-        component: 'view.approval_store',
-        meta: {
-          title: 'approval_store',
-          i18nKey: 'route.approval_store',
-          icon: 'mdi:store-check-outline',
-          order: 1
-        }
-      },
-      {
-        name: 'approval_order',
-        path: '/approval/order',
-        component: 'view.approval_order',
-        meta: {
-          title: 'approval_order',
-          i18nKey: 'route.approval_order',
-          icon: 'mdi:receipt-text-check-outline',
-          order: 2
-        }
-      },
-      {
-        name: 'approval_comment',
-        path: '/approval/comment',
-        component: 'view.approval_comment',
-        meta: {
-          title: 'approval_comment',
-          i18nKey: 'route.approval_comment',
-          icon: 'mdi:comment-check-outline',
-          order: 3
-        }
-      }
-    ]
-  },
-  {
     name: 'iframe-page',
     path: '/iframe-page/:url',
     component: 'layout.base$view.iframe-page',
@@ -310,19 +310,6 @@ export const generatedRoutes: GeneratedRoute[] = [
       roles: ['admin']
     },
     children: [
-      {
-        name: 'manage_approval',
-        path: '/manage/approval',
-        component: 'view.manage_approval',
-        meta: {
-          title: 'manage_approval',
-          i18nKey: 'route.manage_approval',
-          icon: 'mdi:clipboard-check-outline',
-          order: 1,
-          roles: ['admin'],
-          hideInMenu: true
-        }
-      },
       {
         name: 'manage_comment',
         path: '/manage/comment',

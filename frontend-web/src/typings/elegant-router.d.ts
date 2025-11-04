@@ -57,10 +57,6 @@ declare module "@elegant-router/types" {
     "iframe-page": "/iframe-page/:url";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "manage": "/manage";
-    "manage_approval": "/manage/approval";
-    "manage_approval-comment": "/manage/approval-comment";
-    "manage_approval-order": "/manage/approval-order";
-    "manage_approval-store": "/manage/approval-store";
     "manage_comment": "/manage/comment";
     "manage_item": "/manage/item";
     "manage_menu": "/manage/menu";
@@ -204,10 +200,6 @@ declare module "@elegant-router/types" {
     | "function_tab"
     | "function_toggle-auth"
     | "home"
-    | "manage_approval-comment"
-    | "manage_approval-order"
-    | "manage_approval-store"
-    | "manage_approval"
     | "manage_comment"
     | "manage_item"
     | "manage_menu"
