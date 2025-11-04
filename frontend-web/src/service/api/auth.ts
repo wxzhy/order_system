@@ -48,10 +48,13 @@ export function fetchChangePassword(oldPassword: string, newPassword: string) {
  *
  * @param userData User registration data
  */
+export type EmailCodeScene = 'login' | 'register' | 'reset-password';
+
 export function fetchRegister(userData: {
   username: string;
   email: string;
   password: string;
+  verification_code: string;
   phone?: string;
   user_type?: 'customer' | 'vendor' | 'admin';
 }) {
@@ -73,4 +76,37 @@ export function fetchRefreshToken(refreshToken: string) {
       }
     }
   );
+}
+
+export function fetchSendEmailCode(email: string, scene: EmailCodeScene) {
+  return alova.Post<{ message: string }>('/auth/send-email-code', { email, scene });
+}
+
+export function fetchEmailCodeLogin(email: string, verification_code: string) {
+  return alova.Post<Api.Auth.LoginToken>('/auth/login/email', {
+    email,
+    verification_code
+  });
+}
+
+export function fetchResetPassword(payload: {
+  email: string;
+  verification_code: string;
+  new_password: string;
+}) {
+  return alova.Post<{ message: string }>('/auth/reset-password', payload);
+}
+
+export function fetchCustomBackendError(code: string, msg: string) {
+  return alova.Get('/auth/error', {
+    params: { code, msg }
+  });
+}
+
+export function sendCaptcha(phone: string) {
+  return alova.Post<{ message: string }>('/auth/sendCaptcha', { phone });
+}
+
+export function verifyCaptcha(phone: string, code: string) {
+  return alova.Post<{ message: string }>('/auth/verifyCaptcha', { phone, code });
 }

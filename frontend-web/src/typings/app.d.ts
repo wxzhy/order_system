@@ -423,6 +423,7 @@ declare namespace App {
           common: {
             loginOrRegister: string;
             userNamePlaceholder: string;
+            emailPlaceholder: string;
             phonePlaceholder: string;
             codePlaceholder: string;
             passwordPlaceholder: string;
@@ -432,9 +433,11 @@ declare namespace App {
             back: string;
             validateSuccess: string;
             loginSuccess: string;
+            loginFailed: string;
             welcomeBack: string;
           };
           pwdLogin: {
+            hint: string;
             title: string;
             rememberMe: string;
             forgetPassword: string;
@@ -457,9 +460,13 @@ declare namespace App {
             agreement: string;
             protocol: string;
             policy: string;
+            success: string;
+            error: string;
           };
           resetPwd: {
             title: string;
+            success: string;
+            error: string;
           };
           bindWeChat: {
             title: string;

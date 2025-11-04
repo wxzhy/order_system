@@ -3,7 +3,7 @@ import { ref } from 'vue';
 import { ElButton, ElPopconfirm, ElTag } from 'element-plus';
 import { usePagination } from '@sa/alova/client';
 import { enableStatusRecord, userGenderRecord } from '@/constants/business';
-import { batchDeleteUser, deleteUser, fetchGetUserList } from '@/service-alova/api';
+import { batchDeleteUser, deleteUser, fetchGetUserList } from '@/service/api';
 import { $t } from '@/locales';
 import useCheckedColumns from './hooks/use-checked-columns';
 import useTableOperate from './hooks/use-table-operate';
@@ -146,48 +146,23 @@ const { columnChecks, columns } = useCheckedColumns<typeof fetchGetUserList>(() 
       <template #header>
         <div class="flex items-center justify-between">
           <p>{{ $t('page.manage.user.title') }}</p>
-          <TableHeaderOperation
-            v-model:columns="columnChecks"
-            :disabled-delete="checkedRowKeys.length === 0"
-            :loading="loading"
-            @add="handleAdd"
-            @delete="handleBatchDelete"
-            @refresh="refresh"
-          />
+          <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
+            :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="refresh" />
         </div>
       </template>
       <div class="h-[calc(100%-50px)]">
-        <ElTable
-          v-loading="loading"
-          height="100%"
-          border
-          class="sm:h-full"
-          :data="data"
-          row-key="id"
-          @selection-change="checkedRowKeys = $event"
-        >
+        <ElTable v-loading="loading" height="100%" border class="sm:h-full" :data="data" row-key="id"
+          @selection-change="checkedRowKeys = $event">
           <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
         </ElTable>
         <div class="mt-20px flex justify-end">
-          <ElPagination
-            v-if="total"
-            layout="total,prev,pager,next,sizes"
-            :current-page="page"
-            :total="total"
-            :page-size="pageSize"
-            :page-sizes="[10, 15, 20, 25, 30]"
-            :page-count="pageCount"
-            @current-change="getDataByPage"
-            @size-change="handleSizeChange"
-          />
+          <ElPagination v-if="total" layout="total,prev,pager,next,sizes" :current-page="page" :total="total"
+            :page-size="pageSize" :page-sizes="[10, 15, 20, 25, 30]" :page-count="pageCount"
+            @current-change="getDataByPage" @size-change="handleSizeChange" />
         </div>
       </div>
-      <UserOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        @submitted="reload"
-      />
+      <UserOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
+        @submitted="reload" />
     </ElCard>
   </div>
 </template>

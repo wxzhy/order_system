@@ -245,44 +245,51 @@ const local: App.I18n.Schema = {
     login: {
       common: {
         loginOrRegister: 'Login / Register',
-        userNamePlaceholder: 'Please enter user name',
-        phonePlaceholder: 'Please enter phone number',
-        codePlaceholder: 'Please enter verification code',
-        passwordPlaceholder: 'Please enter password',
-        confirmPasswordPlaceholder: 'Please enter password again',
+        userNamePlaceholder: 'Enter your account (username / email / phone)',
+        emailPlaceholder: 'Enter email address',
+        phonePlaceholder: 'Enter phone number',
+        codePlaceholder: 'Enter verification code',
+        passwordPlaceholder: 'Enter your password',
+        confirmPasswordPlaceholder: 'Enter password again',
         codeLogin: 'Verification code login',
         confirm: 'Confirm',
         back: 'Back',
-        validateSuccess: 'Verification passed',
+        validateSuccess: 'Verification successful',
         loginSuccess: 'Login successfully',
-        welcomeBack: 'Welcome back, {userName} !'
+        loginFailed: 'Login failed. Please check your credentials or contact the administrator for help.',
+        welcomeBack: 'Welcome back, {userName}!'
       },
       pwdLogin: {
-        title: 'Password Login',
+        hint: 'Welcome to the order reservation platform. Please sign in with your account.',
+        title: 'Password login',
         rememberMe: 'Remember me',
-        forgetPassword: 'Forget password?',
-        register: 'Register',
-        otherAccountLogin: 'Other Account Login',
-        otherLoginMode: 'Other Login Mode',
-        superAdmin: 'Super Admin',
-        admin: 'Admin',
-        user: 'User'
+        forgetPassword: 'Forgot password?',
+        register: 'Register account',
+        otherAccountLogin: 'Other account login',
+        otherLoginMode: 'Other login methods',
+        superAdmin: 'Super administrator',
+        admin: 'Administrator',
+        user: 'General user'
       },
       codeLogin: {
-        title: 'Verification Code Login',
-        getCode: 'Get verification code',
-        reGetCode: 'Reacquire after {time}s',
-        sendCodeSuccess: 'Verification code sent successfully',
-        imageCodePlaceholder: 'Please enter image verification code'
+        title: 'Verification code login',
+        getCode: 'Get code',
+        reGetCode: 'Retry in {time}s',
+        sendCodeSuccess: 'Verification code sent',
+        imageCodePlaceholder: 'Enter image code'
       },
       register: {
-        title: 'Register',
+        title: 'Register account',
         agreement: 'I have read and agree to',
-        protocol: '《User Agreement》',
-        policy: '《Privacy Policy》'
+        protocol: 'User Agreement',
+        policy: 'Privacy Policy',
+        success: 'Registration successful, please log in',
+        error: 'Registration failed, please try again later'
       },
       resetPwd: {
-        title: 'Reset Password'
+        title: 'Reset password',
+        success: 'Password reset successfully, please sign in with the new password',
+        error: 'Reset failed, please try again later'
       },
       bindWeChat: {
         title: 'Bind WeChat'

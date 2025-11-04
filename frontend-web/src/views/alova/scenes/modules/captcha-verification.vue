@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { actionDelegationMiddleware, useCaptcha, useForm } from '@sa/alova/client';
 import { useFormRules, useForm as useUIForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
-import { sendCaptcha, verifyCaptcha } from '@/service-alova/api';
+import { sendCaptcha, verifyCaptcha } from '@/service/api';
 
 defineOptions({ name: 'CaptchaVerification' });
 

@@ -18,8 +18,8 @@ interface FormModel {
 }
 
 const model = ref<FormModel>({
-  userName: 'admin',
-  password: 'admin123456'
+  userName: '',
+  password: ''
 });
 
 const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
@@ -37,39 +37,7 @@ async function handleSubmit() {
   await authStore.login(model.value.userName, model.value.password);
 }
 
-type AccountKey = 'admin' | 'vendor' | 'customer';
 
-interface Account {
-  key: AccountKey;
-  label: string;
-  userName: string;
-  password: string;
-}
-
-const accounts = computed<Account[]>(() => [
-  {
-    key: 'admin',
-    label: $t('page.login.pwdLogin.admin'),
-    userName: 'admin',
-    password: 'admin123456'
-  },
-  {
-    key: 'vendor',
-    label: '商家账号',
-    userName: 'vendor_zhang',
-    password: 'password123'
-  },
-  {
-    key: 'customer',
-    label: $t('page.login.pwdLogin.user'),
-    userName: 'customer_ming',
-    password: 'password123'
-  }
-]);
-
-async function handleAccountLogin(account: Account) {
-  await authStore.login(account.userName, account.password);
-}
 </script>
 
 <template>
@@ -97,13 +65,6 @@ async function handleAccountLogin(account: Account) {
         </ElButton>
         <ElButton class="flex-1" size="default" @click="toggleLoginModule('register')">
           {{ $t(loginModuleRecord.register) }}
-        </ElButton>
-      </div>
-      <ElDivider class="text-14px text-#666 !m-0">{{ $t('page.login.pwdLogin.otherAccountLogin') }}</ElDivider>
-      <div class="flex-center gap-12px">
-        <ElButton v-for="item in accounts" :key="item.key" size="default" type="primary"
-          :disabled="authStore.loginLoading" @click="handleAccountLogin(item)">
-          {{ item.label }}
         </ElButton>
       </div>
     </ElSpace>

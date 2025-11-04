@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import { fetchRegister } from '@/service/api';
 import { useRouterPush } from '@/hooks/common/router';
 import { useForm, useFormRules } from '@/hooks/common/form';
+import { useEmailCaptcha } from '@/hooks/business/captcha';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'Register' });
@@ -14,6 +15,7 @@ interface FormModel {
   username: string;
   email: string;
   phone: string;
+  verification_code: string;
   password: string;
   confirmPassword: string;
   user_type: 'customer' | 'vendor';
@@ -23,12 +25,14 @@ const model = ref<FormModel>({
   username: '',
   email: '',
   phone: '',
+  verification_code: '',
   password: '',
   confirmPassword: '',
   user_type: 'customer'
 });
 
-const loading = ref(false);
+const submitLoading = ref(false);
+const { label, isCounting, loading: captchaLoading, getCaptcha } = useEmailCaptcha('register');
 
 const rules = computed<Record<string, App.Global.FormRule[]>>(() => {
   const { formRules, createConfirmPwdRule, defaultRequiredRule } = useFormRules();
@@ -37,6 +41,7 @@ const rules = computed<Record<string, App.Global.FormRule[]>>(() => {
     username: formRules.userName,
     email: formRules.email,
     phone: formRules.phone,
+    verification_code: formRules.code,
     password: formRules.pwd,
     confirmPassword: createConfirmPwdRule(model.value.password),
     user_type: [defaultRequiredRule]
@@ -45,23 +50,25 @@ const rules = computed<Record<string, App.Global.FormRule[]>>(() => {
 
 async function handleSubmit() {
   await validate();
-  loading.value = true;
+  submitLoading.value = true;
 
   try {
     await fetchRegister({
       username: model.value.username,
       email: model.value.email,
+      verification_code: model.value.verification_code,
       phone: model.value.phone,
       password: model.value.password,
       user_type: model.value.user_type
     });
 
-    window.$message?.success('注册成功！');
+    window.$message?.success($t('page.login.register.success'));
     toggleLoginModule('pwd-login');
   } catch (error: any) {
-    window.$message?.error(error?.message || '注册失败，请重试');
+    const message = error?.message || $t('page.login.register.error');
+    window.$message?.error(message);
   } finally {
-    loading.value = false;
+    submitLoading.value = false;
   }
 }
 </script>
@@ -93,7 +100,20 @@ async function handleSubmit() {
       <ElInput v-model="model.username" :placeholder="$t('page.login.common.userNamePlaceholder')" />
     </ElFormItem>
     <ElFormItem prop="email">
-      <ElInput v-model="model.email" placeholder="邮箱地址" />
+      <ElInput v-model="model.email" :placeholder="$t('page.login.common.emailPlaceholder')" />
+    </ElFormItem>
+    <ElFormItem prop="verification_code">
+      <div class="w-full flex-y-center gap-16px">
+        <ElInput v-model="model.verification_code" :placeholder="$t('page.login.common.codePlaceholder')" />
+        <ElButton
+          size="large"
+          :disabled="isCounting"
+          :loading="captchaLoading"
+          @click="getCaptcha(model.email)"
+        >
+          {{ label }}
+        </ElButton>
+      </div>
     </ElFormItem>
     <ElFormItem prop="phone">
       <ElInput v-model="model.phone" :placeholder="$t('page.login.common.phonePlaceholder')" />
@@ -107,7 +127,7 @@ async function handleSubmit() {
         :placeholder="$t('page.login.common.confirmPasswordPlaceholder')" />
     </ElFormItem>
     <ElSpace direction="vertical" :size="18" fill class="w-full">
-      <ElButton type="primary" size="large" round block :loading="loading" @click="handleSubmit">
+      <ElButton type="primary" size="large" round block :loading="submitLoading" @click="handleSubmit">
         {{ $t('common.confirm') }}
       </ElButton>
       <ElButton size="large" round @click="toggleLoginModule('pwd-login')">

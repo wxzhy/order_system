@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { fetchResetPassword } from '@/service/api';
 import { useRouterPush } from '@/hooks/common/router';
 import { useForm, useFormRules } from '@/hooks/common/form';
+import { useEmailCaptcha } from '@/hooks/business/captcha';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'ResetPwd' });
@@ -10,18 +12,21 @@ const { toggleLoginModule } = useRouterPush();
 const { formRef, validate } = useForm();
 
 interface FormModel {
-  phone: string;
+  email: string;
   code: string;
   password: string;
   confirmPassword: string;
 }
 
 const model = ref<FormModel>({
-  phone: '',
+  email: '',
   code: '',
   password: '',
   confirmPassword: ''
 });
+
+const submitLoading = ref(false);
+const { label, isCounting, loading: captchaLoading, getCaptcha } = useEmailCaptcha('reset-password');
 
 type RuleRecord = Partial<Record<keyof FormModel, App.Global.FormRule[]>>;
 
@@ -29,7 +34,8 @@ const rules = computed<RuleRecord>(() => {
   const { formRules, createConfirmPwdRule } = useFormRules();
 
   return {
-    phone: formRules.phone,
+    email: formRules.email,
+    code: formRules.code,
     password: formRules.pwd,
     confirmPassword: createConfirmPwdRule(model.value.password)
   };
@@ -37,18 +43,43 @@ const rules = computed<RuleRecord>(() => {
 
 async function handleSubmit() {
   await validate();
-  // request to reset password
-  window.$message?.success($t('page.login.common.validateSuccess'));
+  submitLoading.value = true;
+
+  try {
+    await fetchResetPassword({
+      email: model.value.email,
+      verification_code: model.value.code,
+      new_password: model.value.password
+    });
+
+    window.$message?.success($t('page.login.resetPwd.success'));
+    toggleLoginModule('pwd-login');
+  } catch (error: any) {
+    const message = error?.message || $t('page.login.resetPwd.error');
+    window.$message?.error(message);
+  } finally {
+    submitLoading.value = false;
+  }
 }
 </script>
 
 <template>
   <ElForm ref="formRef" :model="model" :rules="rules" size="large" :show-label="false" @keyup.enter="handleSubmit">
-    <ElFormItem prop="phone">
-      <ElInput v-model="model.phone" :placeholder="$t('page.login.common.phonePlaceholder')" />
+    <ElFormItem prop="email">
+      <ElInput v-model="model.email" :placeholder="$t('page.login.common.emailPlaceholder')" />
     </ElFormItem>
     <ElFormItem prop="code">
-      <ElInput v-model="model.code" :placeholder="$t('page.login.common.codePlaceholder')" />
+      <div class="w-full flex-y-center gap-16px">
+        <ElInput v-model="model.code" :placeholder="$t('page.login.common.codePlaceholder')" />
+        <ElButton
+          size="large"
+          :disabled="isCounting"
+          :loading="captchaLoading"
+          @click="getCaptcha(model.email)"
+        >
+          {{ label }}
+        </ElButton>
+      </div>
     </ElFormItem>
     <ElFormItem prop="password">
       <ElInput
@@ -67,7 +98,7 @@ async function handleSubmit() {
       />
     </ElFormItem>
     <ElSpace direction="vertical" fill :size="18" class="w-full">
-      <ElButton type="primary" size="large" round @click="handleSubmit">
+      <ElButton type="primary" size="large" round :loading="submitLoading" @click="handleSubmit">
         {{ $t('common.confirm') }}
       </ElButton>
       <ElButton size="large" round @click="toggleLoginModule('pwd-login')">

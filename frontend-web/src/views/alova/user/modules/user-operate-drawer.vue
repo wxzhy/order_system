@@ -3,8 +3,8 @@ import { computed, watch } from 'vue';
 import { useForm, useWatcher } from '@sa/alova/client';
 import { enableStatusOptions, userGenderOptions } from '@/constants/business';
 import { useFormRules, useForm as useUIForm } from '@/hooks/common/form';
-import type { UserModel } from '@/service-alova/api';
-import { addUser, fetchGetAllRoles, updateUser } from '@/service-alova/api';
+import type { UserModel } from '@/service/api';
+import { addUser, fetchGetAllRoles, updateUser } from '@/service/api';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'UserOperateDrawer' });
@@ -144,12 +144,8 @@ watch(visible, () => {
         </ElRadioGroup>
       </ElFormItem>
       <ElFormItem :label="$t('page.manage.user.userRole')" prop="roles">
-        <ElSelect
-          v-model="form.userRoles"
-          multiple
-          :loading="loading"
-          :placeholder="$t('page.manage.user.form.userRole')"
-        >
+        <ElSelect v-model="form.userRoles" multiple :loading="loading"
+          :placeholder="$t('page.manage.user.form.userRole')">
           <ElOption v-for="{ label, value } in roleOptions" :key="value" :label="label" :value="value"></ElOption>
         </ElSelect>
       </ElFormItem>

@@ -253,19 +253,22 @@ const local: App.I18n.Schema = {
     login: {
       common: {
         loginOrRegister: '登录 / 注册',
-        userNamePlaceholder: '请输入用户名',
+        userNamePlaceholder: '请输入账号（用户名 / 邮箱 / 手机号）',
+        emailPlaceholder: '请输入邮箱地址',
         phonePlaceholder: '请输入手机号',
         codePlaceholder: '请输入验证码',
-        passwordPlaceholder: '请输入密码',
+        passwordPlaceholder: '请输入登录密码',
         confirmPasswordPlaceholder: '请再次输入密码',
         codeLogin: '验证码登录',
-        confirm: '确定',
+        confirm: '确认',
         back: '返回',
         validateSuccess: '验证成功',
         loginSuccess: '登录成功',
+        loginFailed: '登录失败，请检查账号或密码是否正确，如需帮助请联系管理员。',
         welcomeBack: '欢迎回来，{userName} ！'
       },
       pwdLogin: {
+        hint: '欢迎使用餐饮预订系统，请输入账号和密码继续。',
         title: '密码登录',
         rememberMe: '记住我',
         forgetPassword: '忘记密码？',
@@ -285,12 +288,16 @@ const local: App.I18n.Schema = {
       },
       register: {
         title: '注册账号',
-        agreement: '我已经仔细阅读并接受',
+        agreement: '我已仔细阅读并同意',
         protocol: '《用户协议》',
-        policy: '《隐私权政策》'
+        policy: '《隐私政策》',
+        success: '注册成功，请登录',
+        error: '注册失败，请稍后再试'
       },
       resetPwd: {
-        title: '重置密码'
+        title: '重置密码',
+        success: '密码已重置，请使用新密码登录',
+        error: '重置密码失败，请稍后重试'
       },
       bindWeChat: {
         title: '绑定微信'

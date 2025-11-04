@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { actionDelegationMiddleware, useAutoRequest } from '@sa/alova/client';
-import { alova } from '@/service-alova/request';
+import { alova } from '@/service/request';
 
 defineOptions({ name: 'PollingRequest' });
 

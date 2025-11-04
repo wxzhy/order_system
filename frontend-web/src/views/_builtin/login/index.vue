@@ -50,6 +50,8 @@ const bgColor = computed(() => {
 
   return mixColor(COLOR_WHITE, themeStore.themeColor, ratio);
 });
+
+const isPwdLoginModule = computed(() => (props.module || 'pwd-login') === 'pwd-login');
 </script>
 
 <template>
@@ -78,6 +80,9 @@ const bgColor = computed(() => {
         </header>
         <main class="pt-24px">
           <h3 class="text-18px text-primary font-medium">{{ $t(activeModule.label) }}</h3>
+          <p v-if="isPwdLoginModule" class="mt-8px text-14px text-#666">
+            {{ $t('page.login.pwdLogin.hint') }}
+          </p>
           <div class="pt-24px">
             <Transition :name="themeStore.page.animateMode" mode="out-in" appear>
               <component :is="activeModule.component" />

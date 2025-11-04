@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel, EmailStr, Field
-from backend.models import UserType, StoreState, OrderState, CommentState
+from backend.models import UserType, StoreState, OrderState, CommentState, VerificationScene
 
 
 # ============ Generic Pagination Response ============
@@ -46,6 +46,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
+    verification_code: str = Field(..., min_length=6, max_length=6)
 
 
 class UserUpdate(BaseModel):
@@ -237,3 +238,19 @@ class TokenRefresh(BaseModel):
 class LoginRequest(BaseModel):
     username: str  # 可以是用户名、邮箱或手机号
     password: str
+
+
+class EmailCodeSendRequest(BaseModel):
+    email: EmailStr
+    scene: VerificationScene
+
+
+class EmailCodeVerifyRequest(BaseModel):
+    email: EmailStr
+    scene: VerificationScene
+    verification_code: str = Field(..., min_length=6, max_length=6)
+
+
+class EmailLoginRequest(BaseModel):
+    email: EmailStr
+    verification_code: str = Field(..., min_length=6, max_length=6)

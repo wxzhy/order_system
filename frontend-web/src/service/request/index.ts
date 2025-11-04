@@ -38,6 +38,10 @@ export const alova = createAlovaRequest(
     },
     tokenRefresher: {
       async isExpired(response) {
+        if (response.url?.includes('/auth/login')) {
+          return false;
+        }
+
         // Check if response status is 401 (Unauthorized)
         return response.status === 401;
       },
@@ -59,9 +63,11 @@ export const alova = createAlovaRequest(
 
       let message = error.message;
       let statusCode = 0;
+      let isLoginRequest = false;
 
       if (response) {
         statusCode = response.status;
+        isLoginRequest = response.url?.includes('/auth/login') ?? false;
         try {
           const data = await response?.clone().json();
           // FastAPI returns error message in 'detail' field
@@ -85,6 +91,11 @@ export const alova = createAlovaRequest(
 
       // HTTP 401 means unauthorized, logout user
       if (statusCode === 401) {
+        if (isLoginRequest) {
+          showErrorMsg(state, message);
+          throw error;
+        }
+
         handleLogout();
         throw error;
       }

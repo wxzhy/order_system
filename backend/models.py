@@ -31,6 +31,11 @@ class CommentState(str, enum.Enum):
     APPROVED = "approved"  # 审核通过 [cite: 80]
     REJECTED = "rejected"  # 审核未通过 [cite: 80]
 
+class VerificationScene(str, enum.Enum):
+    LOGIN = "login"
+    REGISTER = "register"
+    RESET_PASSWORD = "reset-password"
+
 
 # --- Link Tables ---
 
@@ -177,3 +182,24 @@ class Comment(SQLModel, table=True):
 
     store_id: int = Field(foreign_key="store.id")
     store: Store = Relationship(back_populates="comments")
+
+
+class EmailVerificationCode(SQLModel, table=True):
+    """邮箱验证码记录"""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True, max_length=255)
+    scene: VerificationScene = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                VerificationScene,
+                native_enum=False,
+                values_callable=lambda x: [e.value for e in x],
+            ),
+            index=True,
+        )
+    )
+    code_hash: str = Field(max_length=128)
+    expires_at: datetime = Field()
+    verified: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)

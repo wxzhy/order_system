@@ -1,37 +1,36 @@
 import { computed } from 'vue';
 import { useCountDown, useLoading } from '@sa/hooks';
-import { REG_PHONE } from '@/constants/reg';
+import { REG_EMAIL } from '@/constants/reg';
 import { $t } from '@/locales';
+import { EmailCodeScene, fetchSendEmailCode } from '@/service/api';
 
-export function useCaptcha() {
+export function useEmailCaptcha(scene: EmailCodeScene) {
   const { loading, startLoading, endLoading } = useLoading();
-  const { count, start, stop, isCounting } = useCountDown(10);
+  const { count, start, stop, isCounting } = useCountDown(60);
 
   const label = computed(() => {
-    let text = $t('page.login.codeLogin.getCode');
-
-    const countingLabel = $t('page.login.codeLogin.reGetCode', { time: count.value });
-
     if (loading.value) {
-      text = '';
+      return '';
     }
 
     if (isCounting.value) {
-      text = countingLabel;
+      return $t('page.login.codeLogin.reGetCode', { time: count.value });
     }
 
-    return text;
+    return $t('page.login.codeLogin.getCode');
   });
 
-  function isPhoneValid(phone: string) {
-    if (phone.trim() === '') {
-      window.$message?.error?.($t('form.phone.required'));
+  function isEmailValid(email: string) {
+    const value = email.trim();
+
+    if (value === '') {
+      window.$message?.error?.($t('form.email.required'));
 
       return false;
     }
 
-    if (!REG_PHONE.test(phone)) {
-      window.$message?.error?.($t('form.phone.invalid'));
+    if (!REG_EMAIL.test(value)) {
+      window.$message?.error?.($t('form.email.invalid'));
 
       return false;
     }
@@ -39,33 +38,27 @@ export function useCaptcha() {
     return true;
   }
 
-  async function getCaptcha(phone: string) {
-    const valid = isPhoneValid(phone);
-
-    if (!valid || loading.value) {
+  async function getCaptcha(email: string) {
+    if (!isEmailValid(email) || loading.value) {
       return;
     }
 
     startLoading();
 
-    // request
-    await new Promise(resolve => {
-      setTimeout(resolve, 500);
-    });
-
-    window.$message?.success?.($t('page.login.codeLogin.sendCodeSuccess'));
-
-    start();
-
-    endLoading();
+    try {
+      await fetchSendEmailCode(email, scene);
+      window.$message?.success?.($t('page.login.codeLogin.sendCodeSuccess'));
+      start();
+    } finally {
+      endLoading();
+    }
   }
 
   return {
     label,
-    start,
-    stop,
     isCounting,
     loading,
-    getCaptcha
+    getCaptcha,
+    stop
   };
 }
