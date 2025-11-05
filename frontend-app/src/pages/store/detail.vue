@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getStoreDetail } from '@/api/store'
-import { getItemList, type IItem } from '@/api/item'
-import { createOrder, type IOrderItemCreate } from '@/api/order'
+import { getStoreItems, type IItem } from '@/api/item'
 import type { IStore } from '@/api/store'
+import { LOGIN_PAGE } from '@/router/config'
+import { useTokenStore } from '@/store/token'
 
 // 餐厅信息
 const storeInfo = ref<IStore | null>(null)
 const storeId = ref<number>(0)
+const tokenStore = useTokenStore()
 
 // 餐点列表
 const itemList = ref<IItem[]>([])
@@ -54,13 +56,12 @@ async function fetchItemList() {
 
   loading.value = true
   try {
-    const data = await getItemList({
-      store_id: storeId.value,
-      in_stock: true,
+    const data = await getStoreItems(storeId.value, {
       skip: 0,
       limit: 100,
     })
-    itemList.value = data.records || []
+    const records = data.records || []
+    itemList.value = records.filter(item => item.quantity > 0)
     finished.value = true
   }
   catch (error: any) {
@@ -152,7 +153,31 @@ function clearCart() {
 }
 
 // 提交订单
-async function submitOrder() {
+function navigateToLoginForOrder() {
+  const redirect = encodeURIComponent(`/pages/store/detail?id=${storeId.value}`)
+  uni.navigateTo({
+    url: `${LOGIN_PAGE}?redirect=${redirect}`,
+  })
+}
+
+function ensureLoginForOrder() {
+  if (tokenStore.hasLogin)
+    return true
+
+  uni.showToast({
+    title: '登录后才能下单',
+    icon: 'none',
+  })
+  setTimeout(() => {
+    navigateToLoginForOrder()
+  }, 500)
+  return false
+}
+
+function goToCheckout() {
+  if (!ensureLoginForOrder())
+    return
+
   if (cart.value.size === 0) {
     uni.showToast({
       title: '请先选择餐点',
@@ -161,42 +186,33 @@ async function submitOrder() {
     return
   }
 
-  // 构建订单项
-  const items: IOrderItemCreate[] = cartItems.value.map(item => ({
-    item_id: item.id,
-    quantity: item.cartQuantity,
-  }))
+  const orderPreview = {
+    storeId: storeId.value,
+    storeName: storeInfo.value?.storeName || (storeInfo.value as any)?.name || '',
+    items: cartItems.value.map(item => ({
+      id: item.id,
+      itemName: item.itemName,
+      price: item.price,
+      quantity: item.cartQuantity,
+    })),
+    totalPrice: cartTotalPrice.value,
+  }
 
   try {
-    uni.showLoading({ title: '提交中...' })
-    const order = await createOrder({
-      store_id: storeId.value,
-      items,
-    })
-    uni.hideLoading()
-
-    uni.showToast({
-      title: '下单成功',
-      icon: 'success',
-    })
-
-    // 清空购物车
-    clearCart()
-
-    // 跳转到订单详情页
-    setTimeout(() => {
-      uni.navigateTo({
-        url: `/pages/order/detail?id=${order.id}`,
-      })
-    }, 1500)
+    uni.setStorageSync('pendingOrder', orderPreview)
   }
-  catch (error: any) {
-    uni.hideLoading()
+  catch (error) {
+    console.error('缓存待提交订单失败', error)
     uni.showToast({
-      title: error?.message || '下单失败',
+      title: '系统错误，请稍后重试',
       icon: 'none',
     })
+    return
   }
+
+  uni.navigateTo({
+    url: '/pages/order/checkout',
+  })
 }
 
 // 返回上一页
@@ -311,8 +327,8 @@ function goBack() {
           <text class="price-value">{{ cartTotalPrice.toFixed(2) }}</text>
         </view>
       </view>
-      <view class="cart-submit" @tap="submitOrder">
-        <text class="submit-text">去下单</text>
+      <view class="cart-submit" @tap="goToCheckout">
+        <text class="submit-text">去结算</text>
       </view>
     </view>
 
@@ -821,3 +837,9 @@ function goBack() {
   gap: 16rpx;
 }
 </style>
+
+
+
+
+
+

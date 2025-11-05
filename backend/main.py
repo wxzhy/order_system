@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.database import lifespan
-from backend.routers import auth, user, store, item, order, comment
+from backend.routers import auth, user, store, item, order, comment, stats
 
 app = FastAPI(
     title="食堂餐点预定系统",
@@ -27,6 +27,7 @@ app.include_router(store.router)
 app.include_router(item.router)
 app.include_router(order.router)
 app.include_router(comment.router)
+app.include_router(stats.router)
 
 
 @app.get("/")

@@ -20,6 +20,13 @@ export type StoreSearchParams = {
     phone?: string;
 };
 
+export type VendorStoreStatus = {
+    exists: boolean;
+    state?: Api.SystemManage.StoreState | null;
+    can_manage: boolean;
+    store?: Api.SystemManage.Store | null;
+};
+
 /** get store list */
 export function fetchGetStoreList(params?: StoreSearchParams) {
     return alova.Get<Api.SystemManage.StoreList>('/store', {
@@ -32,6 +39,19 @@ export function fetchGetStoreList(params?: StoreSearchParams) {
 export function addStore(data: StoreModel) {
     return alova.Post<Api.SystemManage.Store>('/store', data);
 }
+
+export function fetchMyStore() {
+    return alova.Get<Api.SystemManage.Store>('/store/my');
+}
+
+export function fetchVendorStoreStatus() {
+    return alova.Get<VendorStoreStatus>('/store/my/status');
+}
+
+export function updateMyStore(data: StoreModel) {
+    return alova.Put<Api.SystemManage.Store>('/store/my', data);
+}
+
 
 /** update store */
 export function updateStore(id: number, data: StoreModel) {

@@ -1,7 +1,7 @@
 import enum
 from typing import List, Optional
 from sqlmodel import Field, Relationship, SQLModel, Column
-from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy import Enum as SQLAlchemyEnum, Index
 from datetime import datetime
 
 # --- Enums based on document definitions ---
@@ -187,6 +187,8 @@ class Comment(SQLModel, table=True):
 class EmailVerificationCode(SQLModel, table=True):
     """邮箱验证码记录"""
 
+    __table_args__ = (Index("ix_email_verification_code_scene", "scene"),)
+
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, max_length=255)
     scene: VerificationScene = Field(
@@ -196,7 +198,6 @@ class EmailVerificationCode(SQLModel, table=True):
                 native_enum=False,
                 values_callable=lambda x: [e.value for e in x],
             ),
-            index=True,
         )
     )
     code_hash: str = Field(max_length=128)

@@ -46,11 +46,6 @@ function search() {
                 <ElInput v-model="model.user_name" placeholder="请输入用户名" clearable />
               </ElFormItem>
             </ElCol>
-            <ElCol :lg="6" :md="8" :sm="12">
-              <ElFormItem label="商家名称" prop="store_name">
-                <ElInput v-model="model.store_name" placeholder="请输入商家名称" clearable />
-              </ElFormItem>
-            </ElCol>
             <ElCol :lg="12" :md="8" :sm="24">
               <ElSpace class="w-full justify-end" alignment="end">
                 <ElButton @click="reset">

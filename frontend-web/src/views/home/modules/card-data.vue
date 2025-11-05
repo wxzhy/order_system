@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { createReusableTemplate } from '@vueuse/core';
+import { fetchSiteStats } from '@/service/api';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'CardData' });
@@ -10,6 +11,7 @@ interface CardData {
   title: string;
   value: number;
   unit: string;
+  decimals?: number;
   color: {
     start: string;
     end: string;
@@ -17,52 +19,77 @@ interface CardData {
   icon: string;
 }
 
-const cardData = computed<CardData[]>(() => [
-  {
-    key: 'visitCount',
-    title: $t('page.home.visitCount'),
-    value: 9725,
-    unit: '',
-    color: {
-      start: '#ec4786',
-      end: '#b955a4'
-    },
-    icon: 'ant-design:bar-chart-outlined'
-  },
-  {
-    key: 'turnover',
-    title: $t('page.home.turnover'),
-    value: 1026,
-    unit: '$',
-    color: {
-      start: '#865ec0',
-      end: '#5144b4'
-    },
-    icon: 'ant-design:money-collect-outlined'
-  },
-  {
-    key: 'downloadCount',
-    title: $t('page.home.downloadCount'),
-    value: 970925,
-    unit: '',
-    color: {
-      start: '#56cdf3',
-      end: '#719de3'
-    },
-    icon: 'carbon:document-download'
-  },
-  {
-    key: 'dealCount',
-    title: $t('page.home.dealCount'),
-    value: 9527,
-    unit: '',
-    color: {
-      start: '#fcbc25',
-      end: '#f68057'
-    },
-    icon: 'ant-design:trademark-circle-outlined'
+const siteStats = ref<Api.Stats.SiteResponse | null>(null);
+const loading = ref(false);
+
+async function loadSiteStats() {
+  if (loading.value) {
+    return;
   }
-]);
+
+  loading.value = true;
+  try {
+    siteStats.value = await fetchSiteStats();
+  } catch {
+    siteStats.value = null;
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(loadSiteStats);
+
+const cardData = computed<CardData[]>(() => {
+  const stats = siteStats.value;
+
+  return [
+    {
+      key: 'userTotal',
+      title: $t('page.home.userTotal'),
+      value: stats?.user_total ?? 0,
+      unit: '',
+      color: {
+        start: '#5c6bc0',
+        end: '#3949ab'
+      },
+      icon: 'ic:round-group'
+    },
+    {
+      key: 'merchantTotal',
+      title: $t('page.home.merchantTotal'),
+      value: stats?.merchant_total ?? 0,
+      unit: '',
+      color: {
+        start: '#29b6f6',
+        end: '#0288d1'
+      },
+      icon: 'mdi:storefront'
+    },
+    {
+      key: 'orderTotal',
+      title: $t('page.home.orderTotal'),
+      value: stats?.order_total ?? 0,
+      unit: '',
+      color: {
+        start: '#66bb6a',
+        end: '#388e3c'
+      },
+      icon: 'mdi:clipboard-list-outline'
+    },
+    {
+      key: 'amountTotal',
+      title: $t('page.home.amountTotal'),
+      value: Number((stats?.turnover_total ?? 0).toFixed(2)),
+      unit: '¥',
+      decimals: 2,
+      color: {
+        start: '#ffa726',
+        end: '#fb8c00'
+      },
+      icon: 'mdi:currency-cny'
+    }
+  ];
+});
 
 interface GradientBgProps {
   gradientColor: string;
@@ -92,8 +119,9 @@ function getGradientColor(color: CardData['color']) {
             <SvgIcon :icon="item.icon" class="text-32px" />
             <CountTo
               :prefix="item.unit"
-              :start-value="1"
+              :start-value="0"
               :end-value="item.value"
+              :decimals="item.decimals ?? 0"
               class="text-30px text-white dark:text-dark"
             />
           </div>

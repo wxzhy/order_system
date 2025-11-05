@@ -171,11 +171,16 @@ async def list_orders(
         # 商家查看自己店铺的订单
         store_statement = select(Store).where(Store.owner_id == current_user.id)
         store = session.exec(store_statement).first()
-        if store:
-            statement = statement.where(Order.store_id == store.id)
-            count_statement = count_statement.where(Order.store_id == store.id)
-        else:
-            return PageResponse(records=[], total=0, current=1, size=limit)
+        if not store:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="商家尚未提交商家信息，请先完成商家注册"
+            )
+        if store.state != StoreState.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="商家信息未审核通过，暂无法查看订单"
+            )
+        statement = statement.where(Order.store_id == store.id)
+        count_statement = count_statement.where(Order.store_id == store.id)
     # 管理员可以查看所有订单
 
     # 按状态筛选
@@ -330,6 +335,10 @@ async def get_order(order_id: int, session: SessionDep, current_user: CurrentUse
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限查看该订单"
             )
+        if store.state != StoreState.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="商家信息未审核通过，暂无法查看订单"
+            )
 
     # 返回订单响应
     return populate_order_response(order, session)
@@ -377,6 +386,10 @@ async def update_order(
         if not store or order.store_id != store.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限修改该订单"
+            )
+        if store.state != StoreState.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="商家信息未审核通过，暂无法审批订单"
             )
 
         if order.state != OrderState.PENDING:

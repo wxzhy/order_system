@@ -4,6 +4,8 @@ import { onLoad } from '@dcloudio/uni-app'
 import type { IStore } from '@/api/store'
 import { getStoreDetail } from '@/api/store'
 import { getCommentList, createComment, type IComment } from '@/api/comment'
+import { LOGIN_PAGE } from '@/router/config'
+import { useTokenStore } from '@/store/token'
 import { safeAreaInsets } from '@/utils/systemInfo'
 
 defineOptions({ name: 'StoreInfo' })
@@ -11,6 +13,7 @@ defineOptions({ name: 'StoreInfo' })
 // 餐厅信息
 const storeInfo = ref<IStore | null>(null)
 const storeId = ref<number>(0)
+const tokenStore = useTokenStore()
 const loading = ref(false)
 
 // 评论列表
@@ -106,7 +109,30 @@ function loadMoreComments() {
 }
 
 // 打开评论输入框
+function navigateToLoginPage() {
+  const redirect = encodeURIComponent(`/pages/store/info?id=${storeId.value}`)
+  uni.navigateTo({
+    url: `${LOGIN_PAGE}?redirect=${redirect}`,
+  })
+}
+
+function ensureLoginForComment() {
+  if (tokenStore.hasLogin)
+    return true
+
+  uni.showToast({
+    title: '请登录后再发表评论',
+    icon: "none",
+  })
+  setTimeout(() => {
+    navigateToLoginPage()
+  }, 500)
+  return false
+}
 function openCommentInput() {
+  if (!ensureLoginForComment())
+    return
+
   showCommentInput.value = true
   newCommentContent.value = ''
 }
@@ -119,6 +145,9 @@ function closeCommentInput() {
 
 // 提交评论
 async function submitComment() {
+  if (!ensureLoginForComment())
+    return
+
   if (!newCommentContent.value.trim()) {
     uni.showToast({
       title: '请输入评论内容',

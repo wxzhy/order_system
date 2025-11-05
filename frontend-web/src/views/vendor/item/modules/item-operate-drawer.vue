@@ -10,6 +10,7 @@ defineOptions({
 interface Props {
   operateType: 'add' | 'edit';
   rowData?: Api.SystemManage.Item | null;
+  storeId?: number | null;
 }
 
 const props = defineProps<Props>();
@@ -37,7 +38,7 @@ function createDefaultModel(): Model {
     imageURL: '',
     price: 0,
     quantity: 0,
-    store_id: 1
+    store_id: props.storeId ?? 0
   };
 }
 
@@ -48,8 +49,7 @@ const rules = computed(() => {
   const baseRules: Record<string, App.Global.FormRule[]> = {
     itemName: [defaultRequiredRule],
     price: [defaultRequiredRule, { type: 'number', min: 0.01, message: '价格必须大于0', trigger: 'blur' }],
-    quantity: [defaultRequiredRule, { type: 'number', min: 0, message: '库存不能为负数', trigger: 'blur' }],
-    store_id: [defaultRequiredRule]
+    quantity: [defaultRequiredRule, { type: 'number', min: 0, message: '库存不能为负数', trigger: 'blur' }]
   };
 
   return baseRules;
@@ -65,7 +65,7 @@ function handleInitModel() {
       imageURL: props.rowData.imageURL || '',
       price: props.rowData.price,
       quantity: props.rowData.quantity,
-      store_id: props.rowData.store_id
+      store_id: props.storeId ?? props.rowData.store_id
     });
   }
 }
@@ -78,6 +78,12 @@ async function handleSubmit() {
   await validate();
 
   try {
+    const targetStoreId = props.storeId ?? model.store_id;
+    if (!targetStoreId) {
+      window.$message?.error('未检测到商家信息，请先完成商家注册');
+      return;
+    }
+
     if (props.operateType === 'add') {
       await addItem({
         itemName: model.itemName,
@@ -85,7 +91,7 @@ async function handleSubmit() {
         imageURL: model.imageURL || null,
         price: model.price,
         quantity: model.quantity,
-        store_id: model.store_id
+        store_id: targetStoreId
       });
       window.$message?.success('添加成功');
     } else if (props.rowData) {
@@ -95,7 +101,7 @@ async function handleSubmit() {
         imageURL: model.imageURL || null,
         price: model.price,
         quantity: model.quantity,
-        store_id: model.store_id
+        store_id: targetStoreId
       });
       window.$message?.success('更新成功');
     }
@@ -127,9 +133,16 @@ watch(visible, () => {
       <ElFormItem label="库存数量" prop="quantity">
         <ElInputNumber v-model="model.quantity" :min="0" :step="1" placeholder="请输入库存数量" class="w-full" />
       </ElFormItem>
-      <ElFormItem label="所属商家ID" prop="store_id">
-        <ElInputNumber v-model="model.store_id" :min="1" :step="1" placeholder="请输入商家ID" class="w-full" />
+      <ElFormItem v-if="props.storeId" label="所属商家ID" prop="store_id">
+        <ElInputNumber v-model="model.store_id" :min="1" :step="1" class="w-full" disabled />
       </ElFormItem>
+      <ElAlert
+        v-else
+        type="warning"
+        :closable="false"
+        title="未检测到商家信息，请先完成商家注册并通过审核后再操作餐点。"
+        class="mb-12px"
+      />
       <ElFormItem label="描述" prop="description">
         <ElInput v-model="model.description" type="textarea" :rows="3" placeholder="请输入餐点描述(可选)" />
       </ElFormItem>

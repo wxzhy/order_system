@@ -13,7 +13,7 @@ onShow((options) => {
     navigateToInterceptor.invoke({ url: `/${options.path}`, query: options.query })
   }
   else {
-    navigateToInterceptor.invoke({ url: '/' })
+    navigateToInterceptor.invoke({ url: '/pages/index/index' })
   }
 })
 onHide(() => {

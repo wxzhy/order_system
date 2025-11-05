@@ -82,12 +82,18 @@ async def list_items(
         # 查询商家的店铺ID
         store_statement = select(Store).where(Store.owner_id == current_user.id)
         store = session.exec(store_statement).first()
-        if store:
-            statement = statement.where(Item.store_id == store.id)
-            count_statement = count_statement.where(Item.store_id == store.id)
-        else:
-            # 如果商家没有店铺，返回空列表
-            return PageResponse(records=[], total=0, current=1, size=limit)
+        if not store:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="商家尚未提交商家信息，请先完成商家注册",
+            )
+        if store.state != StoreState.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="商家信息未审核通过，暂无法管理餐点",
+            )
+        statement = statement.where(Item.store_id == store.id)
+        count_statement = count_statement.where(Item.store_id == store.id)
 
     # 按商家ID筛选（内部参数，管理员可用）
     if store_id and current_user.user_type == UserType.ADMIN:

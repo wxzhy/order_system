@@ -9,6 +9,7 @@ from backend.schemas import (
     StoreUpdate,
     StoreResponse,
     StoreReview,
+    VendorStoreStatus,
     PageResponse,
     BatchDeleteRequest,
     BatchDeleteResponse,
@@ -149,6 +150,51 @@ async def get_my_store(current_vendor: CurrentVendor, session: SessionDep):
         )
     return store
 
+
+
+
+@router.get("/my/status", response_model=VendorStoreStatus)
+async def get_my_store_status(current_vendor: CurrentVendor, session: SessionDep):
+    """�̼Ҳ�ȡ�Լ��̼���Ϣ״̬"""
+    statement = select(Store).where(Store.owner_id == current_vendor.id)
+    store = session.exec(statement).first()
+
+    if not store:
+        return VendorStoreStatus(exists=False, can_manage=False)
+
+    store_response = populate_store_response(store, session)
+
+    return VendorStoreStatus(
+        exists=True,
+        state=store.state,
+        can_manage=store.state == StoreState.APPROVED,
+        store=store_response
+    )
+
+
+@router.put("/my", response_model=StoreResponse)
+async def update_my_store(
+    store_update: StoreUpdate, current_vendor: CurrentVendor, session: SessionDep
+):
+    """�̸̼��Լ���̼���Ϣ�������й�ˡ"""
+    statement = select(Store).where(Store.owner_id == current_vendor.id)
+    store = session.exec(statement).first()
+    if not store:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="����δ�����̼���Ϣ"
+        )
+
+    update_data = store_update.model_dump(exclude_unset=True, by_alias=True)
+    for key, value in update_data.items():
+        setattr(store, key, value)
+
+    store.state = StoreState.PENDING
+    store.review_time = None
+
+    session.add(store)
+    session.commit()
+    session.refresh(store)
+    return populate_store_response(store, session)
 
 @router.get("/{store_id}", response_model=StoreResponse)
 async def get_store(store_id: int, session: SessionDep):

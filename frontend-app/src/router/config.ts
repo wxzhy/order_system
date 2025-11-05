@@ -10,9 +10,10 @@ export const isNeedLoginMode = LOGIN_STRATEGY === LOGIN_STRATEGY_MAP.DEFAULT_NEE
 
 export const LOGIN_PAGE = '/pages-fg/login/login'
 export const REGISTER_PAGE = '/pages-fg/login/register'
+export const RESET_PASSWORD_PAGE = '/pages-fg/login/reset-password'
 export const NOT_FOUND_PAGE = '/pages-fg/404/index'
 
-export const LOGIN_PAGE_LIST = [LOGIN_PAGE, REGISTER_PAGE]
+export const LOGIN_PAGE_LIST = [LOGIN_PAGE, REGISTER_PAGE, RESET_PASSWORD_PAGE]
 
 // 在 definePage 里面配置了 excludeLoginPath 的页面，功能与 EXCLUDE_LOGIN_PATH_LIST 相同
 export const excludeLoginPathList = getAllPages('excludeLoginPath').map(page => page.path)

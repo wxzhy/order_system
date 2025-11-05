@@ -49,6 +49,10 @@ class UserCreate(UserBase):
     verification_code: str = Field(..., min_length=6, max_length=6)
 
 
+class AdminUserCreate(UserBase):
+    password: str = Field(..., min_length=6)
+
+
 class UserUpdate(BaseModel):
     username: Optional[str] = Field(None, min_length=1, max_length=100)
     email: Optional[EmailStr] = None
@@ -114,6 +118,13 @@ class StoreResponse(StoreBase):
 class StoreReview(BaseModel):
     state: StoreState
     review_comment: Optional[str] = None
+
+
+class VendorStoreStatus(BaseModel):
+    exists: bool
+    state: Optional[StoreState] = None
+    can_manage: bool = False
+    store: Optional[StoreResponse] = None
 
 
 # ============ Item Schemas ============
@@ -222,6 +233,39 @@ class CommentResponse(CommentBase):
 class CommentReview(BaseModel):
     state: CommentState
     review_comment: Optional[str] = None
+
+
+# ============ Statistics Schemas ============
+class VendorPersonalStats(BaseModel):
+    store_exists: bool = False
+    store_state: Optional[StoreState] = None
+    item_total: int = 0
+    order_total: int = 0
+    order_pending: int = 0
+
+
+class AdminPersonalStats(BaseModel):
+    pending_store_review: int = 0
+    pending_comment_review: int = 0
+
+
+class CustomerPersonalStats(BaseModel):
+    order_total: int = 0
+    order_pending: int = 0
+
+
+class PersonalStatsResponse(BaseModel):
+    user_type: UserType
+    vendor: Optional[VendorPersonalStats] = None
+    admin: Optional[AdminPersonalStats] = None
+    customer: Optional[CustomerPersonalStats] = None
+
+
+class SiteStatsResponse(BaseModel):
+    user_total: int = 0
+    merchant_total: int = 0
+    order_total: int = 0
+    turnover_total: float = 0.0
 
 
 # ============ Auth Schemas ============

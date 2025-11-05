@@ -1,35 +1,31 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, onUnmounted } from 'vue'
-import { sendEmailCode, register as registerApi } from '@/api/login'
+import { resetPassword, sendEmailCode } from '@/api/login'
 import { LOGIN_PAGE } from '@/router/config'
 
 definePage({
   style: {
-    navigationBarTitleText: '注册',
+    navigationBarTitleText: '重置密码',
   },
 })
 
 const form = reactive({
-  username: '',
   email: '',
-  phone: '',
-  password: '',
-  confirmPassword: '',
   verificationCode: '',
+  newPassword: '',
+  confirmPassword: '',
 })
 
 const errors = reactive({
-  username: '',
   email: '',
-  password: '',
-  confirmPassword: '',
   verificationCode: '',
+  newPassword: '',
+  confirmPassword: '',
 })
 
 const isSubmitting = ref(false)
 const isSendingCode = ref(false)
 const countdown = ref(0)
-
 let timer: number | null = null
 
 const canSendCode = computed(() => Boolean(form.email.trim()) && !isSendingCode.value && countdown.value === 0)
@@ -86,7 +82,7 @@ async function handleSendCode() {
   try {
     await sendEmailCode({
       email,
-      scene: 'register',
+      scene: 'reset-password',
     })
     uni.showToast({ title: '验证码已发送', icon: 'success' })
     startCountdown()
@@ -101,17 +97,11 @@ async function handleSendCode() {
 }
 
 function validateForm() {
-  errors.username = ''
   errors.email = ''
-  errors.password = ''
-  errors.confirmPassword = ''
   errors.verificationCode = ''
+  errors.newPassword = ''
+  errors.confirmPassword = ''
   let valid = true
-
-  if (!form.username.trim()) {
-    errors.username = '请输入用户名'
-    valid = false
-  }
 
   const email = form.email.trim()
   if (!email) {
@@ -132,20 +122,20 @@ function validateForm() {
     valid = false
   }
 
-  if (!form.password) {
-    errors.password = '请输入密码'
+  if (!form.newPassword) {
+    errors.newPassword = '请输入新密码'
     valid = false
   }
-  else if (form.password.length < 6) {
-    errors.password = '密码长度不能少于6位'
+  else if (form.newPassword.length < 6) {
+    errors.newPassword = '密码长度不能少于6位'
     valid = false
   }
 
   if (!form.confirmPassword) {
-    errors.confirmPassword = '请再次输入密码'
+    errors.confirmPassword = '请再次输入新密码'
     valid = false
   }
-  else if (form.confirmPassword !== form.password) {
+  else if (form.confirmPassword !== form.newPassword) {
     errors.confirmPassword = '两次输入的密码不一致'
     valid = false
   }
@@ -159,22 +149,20 @@ async function handleSubmit() {
 
   isSubmitting.value = true
   try {
-    await registerApi({
-      username: form.username.trim(),
+    await resetPassword({
       email: form.email.trim(),
-      phone: form.phone.trim() || undefined,
-      password: form.password,
       verification_code: form.verificationCode.trim(),
+      new_password: form.newPassword,
     })
-    uni.showToast({ title: '注册成功，请登录', icon: 'success' })
+    uni.showToast({ title: '密码已重置', icon: 'success' })
     stopCountdown()
     setTimeout(() => {
       uni.redirectTo({ url: LOGIN_PAGE })
     }, 800)
   }
   catch (error) {
-    console.error('注册失败', error)
-    uni.showToast({ title: '注册失败，请稍后重试', icon: 'none' })
+    console.error('重置密码失败', error)
+    uni.showToast({ title: '重置失败，请稍后重试', icon: 'none' })
   }
   finally {
     isSubmitting.value = false
@@ -187,35 +175,17 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <view class="register-page">
+  <view class="reset-page">
     <view class="header">
       <view class="title">
-        创建新账号
+        重置密码
       </view>
       <view class="subtitle">
-        填写信息完成注册
+        输入邮箱并完成验证
       </view>
     </view>
 
     <view class="form-card">
-      <view class="form-item">
-        <view class="form-label">
-          <text class="required">*</text>
-          用户名
-        </view>
-        <input
-          v-model="form.username"
-          class="form-input"
-          type="text"
-          placeholder="请输入用户名"
-          :disabled="isSubmitting"
-          @input="clearError('username')"
-        >
-        <view v-if="errors.username" class="error-text">
-          {{ errors.username }}
-        </view>
-      </view>
-
       <view class="form-item">
         <view class="form-label">
           <text class="required">*</text>
@@ -225,7 +195,7 @@ onUnmounted(() => {
           v-model="form.email"
           class="form-input"
           type="text"
-          placeholder="请输入邮箱"
+          placeholder="请输入注册邮箱"
           :disabled="isSubmitting"
           @input="clearError('email')"
         >
@@ -266,31 +236,31 @@ onUnmounted(() => {
       <view class="form-item">
         <view class="form-label">
           <text class="required">*</text>
-          密码
+          新密码
         </view>
         <input
-          v-model="form.password"
+          v-model="form.newPassword"
           class="form-input"
           type="password"
-          placeholder="请输入密码"
+          placeholder="请输入新密码"
           :disabled="isSubmitting"
-          @input="clearError('password')"
+          @input="clearError('newPassword')"
         >
-        <view v-if="errors.password" class="error-text">
-          {{ errors.password }}
+        <view v-if="errors.newPassword" class="error-text">
+          {{ errors.newPassword }}
         </view>
       </view>
 
       <view class="form-item">
         <view class="form-label">
           <text class="required">*</text>
-          确认密码
+          确认新密码
         </view>
         <input
           v-model="form.confirmPassword"
           class="form-input"
           type="password"
-          placeholder="请再次输入密码"
+          placeholder="请再次输入新密码"
           :disabled="isSubmitting"
           @input="clearError('confirmPassword')"
         >
@@ -299,27 +269,14 @@ onUnmounted(() => {
         </view>
       </view>
 
-      <view class="form-item">
-        <view class="form-label">
-          手机号（选填）
-        </view>
-        <input
-          v-model="form.phone"
-          class="form-input"
-          type="text"
-          placeholder="请输入手机号"
-          :disabled="isSubmitting"
-        >
-      </view>
-
       <view class="button-group">
         <button
-          class="register-button"
+          class="submit-button"
           :class="{ loading: isSubmitting }"
           :disabled="isSubmitting"
           @tap="handleSubmit"
         >
-          {{ isSubmitting ? '注册中...' : '注册' }}
+          {{ isSubmitting ? '提交中...' : '提交' }}
         </button>
       </view>
     </view>
@@ -327,7 +284,7 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.register-page {
+.reset-page {
   min-height: 100vh;
   padding: 40rpx;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -432,7 +389,7 @@ onUnmounted(() => {
   margin-top: 40rpx;
 }
 
-.register-button {
+.submit-button {
   width: 100%;
   padding: 28rpx;
   font-size: 32rpx;

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import type { IUploadSuccessInfo } from '@/api/types/login'
 import { storeToRefs } from 'pinia'
 import { LOGIN_PAGE } from '@/router/config'
@@ -12,88 +13,53 @@ definePage({
   },
 })
 
+const defaultAvatar = '/static/images/default-avatar.png'
+
 const userStore = useUserStore()
 const tokenStore = useTokenStore()
-// 使用storeToRefs解构userInfo
 const { userInfo } = storeToRefs(userStore)
 
-// #ifndef MP-WEIXIN
-// 上传头像
 const { run: uploadAvatar } = useUpload<IUploadSuccessInfo>(
   '/upload',
   {},
   {
     onSuccess: (res) => {
-      console.log('h5头像上传成功', res)
-      useUserStore().setUserAvatar(res.url)
+      userStore.setUserAvatar(res.url)
     },
   },
 )
-// #endif
 
-// 微信小程序下登录
-async function handleLogin() {
-  // #ifdef MP-WEIXIN
-  // 微信登录
-  await tokenStore.wxLogin()
+const isLoggedIn = computed(() => tokenStore.hasLogin)
+const avatarSrc = computed(() => (isLoggedIn.value && userInfo.value.avatar ? userInfo.value.avatar : defaultAvatar))
+const displayName = computed(() => (isLoggedIn.value ? (userInfo.value.username || '未设置用户名') : '点击登录'))
+const idText = computed(() => (isLoggedIn.value ? `ID: ${userInfo.value.userId ?? userInfo.value.id ?? '-'}` : '登录后可查看个人信息'))
+const tipsText = computed(() => (isLoggedIn.value ? '欢迎使用食堂餐点预约系统' : '登录后可查看订单和个人资料'))
 
-  // #endif
-  // #ifndef MP-WEIXIN
+function handleLogin() {
   uni.navigateTo({
     url: `${LOGIN_PAGE}?redirect=${encodeURIComponent('/pages/me/me')}`,
   })
-  // #endif
 }
 
-// #ifdef MP-WEIXIN
-
-// 微信小程序下选择头像事件
-function onChooseAvatar(e: any) {
-  console.log('选择头像', e.detail)
-  const { avatarUrl } = e.detail
-  const { run } = useUpload<IUploadSuccessInfo>(
-    '/upload',
-    {},
-    {
-      onSuccess: (res) => {
-        console.log('wx头像上传成功', res)
-        useUserStore().setUserAvatar(res.url)
-      },
-    },
-    avatarUrl,
-  )
-  run()
+function handleAvatarTap() {
+  if (!isLoggedIn.value) {
+    handleLogin()
+    return
+  }
+  uploadAvatar()
 }
-// #endif
-// #ifdef MP-WEIXIN
-// 微信小程序下设置用户名
-function getUserInfo(e: any) {
-  console.log(e.detail)
-}
-// #endif
 
-// 退出登录
 function handleLogout() {
   uni.showModal({
     title: '提示',
     content: '确定要退出登录吗？',
     success: (res) => {
       if (res.confirm) {
-        // 清空用户信息
-        useTokenStore().logout()
-        // 执行退出登录逻辑
+        tokenStore.logout()
         uni.showToast({
-          title: '退出登录成功',
+          title: '已退出登录',
           icon: 'success',
         })
-        // #ifdef MP-WEIXIN
-        // 微信小程序，去首页
-        // uni.reLaunch({ url: '/pages/index/index' })
-        // #endif
-        // #ifndef MP-WEIXIN
-        // 非微信小程序，去登录页
-        // uni.navigateTo({ url: LOGIN_PAGE })
-        // #endif
       }
     },
   })
@@ -102,113 +68,129 @@ function handleLogout() {
 
 <template>
   <view class="profile-container">
-    <!-- 用户信息区域 -->
     <view class="user-info-section">
-      <!-- #ifdef MP-WEIXIN -->
-      <button class="avatar-button" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
-        <image :src="userInfo.avatar" mode="scaleToFill" class="h-full w-full" />
-      </button>
-      <!-- #endif -->
-      <!-- #ifndef MP-WEIXIN -->
-      <view class="avatar-wrapper" @click="uploadAvatar">
-        <image :src="userInfo.avatar" mode="scaleToFill" class="h-full w-full" />
+      <view class="avatar-wrapper" @tap="handleAvatarTap">
+        <image :src="avatarSrc" mode="scaleToFill" class="avatar-image" />
+        <view v-if="!isLoggedIn" class="avatar-overlay">登录</view>
       </view>
-      <!-- #endif -->
       <view class="user-details">
-        <!-- #ifdef MP-WEIXIN -->
-        <input
-          v-model="userInfo.username"
-          type="nickname"
-          class="weui-input"
-          placeholder="请输入昵称"
-        >
-        <!-- #endif -->
-        <!-- #ifndef MP-WEIXIN -->
-        <view class="username">
-          {{ userInfo.username }}
+        <view class="username" @tap="handleAvatarTap">
+          {{ displayName }}
         </view>
-        <!-- #endif -->
         <view class="user-id">
-          ID: {{ userInfo.userId }}
+          {{ idText }}
+        </view>
+        <view class="user-tips">
+          {{ tipsText }}
         </view>
       </view>
     </view>
 
-    <view class="mt-3 break-all px-3">
-      {{ JSON.stringify(userInfo, null, 2) }}
-    </view>
-
-    <view class="mt-20 px-3">
-      <view class="m-auto w-160px text-center">
-        <button v-if="tokenStore.hasLogin" type="warn" class="w-full" @click="handleLogout">
-          退出登录
-        </button>
-        <button v-else type="primary" class="w-full" @click="handleLogin">
-          登录
-        </button>
-      </view>
+    <view class="action-section">
+      <button
+        v-if="isLoggedIn"
+        type="warn"
+        class="action-button"
+        @tap="handleLogout"
+      >
+        退出登录
+      </button>
+      <button
+        v-else
+        type="primary"
+        class="action-button"
+        @tap="handleLogin"
+      >
+        立即登录
+      </button>
     </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-/* 基础样式 */
 .profile-container {
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-  // background-color: #f7f8fa;
+  min-height: 100vh;
+  padding: 32rpx;
+  box-sizing: border-box;
+  background-color: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40rpx;
 }
-/* 用户信息区域 */
+
 .user-info-section {
   display: flex;
   align-items: center;
   padding: 40rpx;
-  margin: 30rpx 30rpx 20rpx;
-  background-color: #fff;
+  background-color: #ffffff;
   border-radius: 24rpx;
   box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
 }
 
 .avatar-wrapper {
   width: 160rpx;
   height: 160rpx;
-  margin-right: 40rpx;
-  overflow: hidden;
-  border: 4rpx solid #f5f5f5;
+  margin-right: 32rpx;
+  position: relative;
   border-radius: 50%;
+  overflow: hidden;
+  border: 4rpx solid #f4f4f5;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
 }
-.avatar-button {
-  height: 160rpx;
-  width: 160rpx;
-  padding: 0;
-  margin-right: 40rpx;
-  overflow: hidden;
-  border: 4rpx solid #f5f5f5;
-  border-radius: 50%;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
 }
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  font-size: 28rpx;
+  letter-spacing: 4rpx;
+}
+
 .user-details {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
 
 .username {
-  margin-bottom: 12rpx;
-  font-size: 38rpx;
+  font-size: 36rpx;
   font-weight: 600;
-  color: #333;
-  letter-spacing: 0.5rpx;
+  color: #111827;
 }
 
-.user-id {
-  font-size: 28rpx;
-  color: #666;
+.user-id,
+.user-tips {
+  font-size: 26rpx;
+  color: #6b7280;
 }
 
-.user-created {
-  margin-top: 8rpx;
-  font-size: 24rpx;
-  color: #999;
+.action-section {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.action-button {
+  width: 100%;
+  padding: 28rpx;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+
+  &::after {
+    display: none;
+  }
 }
 </style>

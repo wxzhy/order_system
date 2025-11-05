@@ -50,3 +50,14 @@ export function getItemDetail(id: number) {
     method: 'GET',
   })
 }
+
+/**
+ * 获取指定餐厅的餐点列表
+ */
+export function getStoreItems(storeId: number, params?: { skip?: number; limit?: number }) {
+  return http<PageResponse<IItem>>({
+    url: `/item/store/${storeId}`,
+    method: 'GET',
+    query: params,
+  })
+}

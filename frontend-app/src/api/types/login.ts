@@ -1,54 +1,96 @@
-// 认证模式类型
-export type AuthMode = 'single' | 'double'
+/**
+ * 验证场景
+ */
+export type VerificationScene = 'login' | 'register' | 'reset-password'
 
-// 单Token响应类型
-export interface ISingleTokenRes {
-  token: string
-  expiresIn: number // 有效期(秒)
+/**
+ * 后端原始的 Token 响应
+ */
+export interface TokenResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
 }
 
-// 双Token响应类型
-export interface IDoubleTokenRes {
+/**
+ * 存储在前端的 Token 信息
+ */
+export interface TokenInfo {
   accessToken: string
   refreshToken: string
-  accessExpiresIn: number // 访问令牌有效期(秒)
-  refreshExpiresIn: number // 刷新令牌有效期(秒)
+  tokenType: string
+  accessExpiresAt: number
+  refreshExpiresAt: number
 }
 
 /**
- * 登录返回的信息，其实就是 token 信息
+ * 登录请求体
  */
-export type IAuthLoginRes = ISingleTokenRes | IDoubleTokenRes
+export interface LoginPayload {
+  username: string
+  password: string
+}
 
 /**
- * 用户信息
+ * 注册请求体
+ */
+export interface RegisterPayload {
+  username: string
+  email: string
+  password: string
+  verification_code: string
+  phone?: string
+}
+
+/**
+ * 重置密码请求体
+ */
+export interface ResetPasswordPayload {
+  email: string
+  verification_code: string
+  new_password: string
+}
+
+/**
+ * 邮件验证码请求体
+ */
+export interface EmailCodeRequest {
+  email: string
+  scene: VerificationScene
+}
+
+/**
+ * 当前登录用户信息
  */
 export interface IUserInfoRes {
-  userId: number
+  id: number
   username: string
-  nickname: string
-  avatar?: string
-  [key: string]: any // 允许其他扩展字段
-}
-
-// 认证存储数据结构
-export interface AuthStorage {
-  mode: AuthMode
-  tokens: ISingleTokenRes | IDoubleTokenRes
-  userInfo?: IUserInfoRes
-  loginTime: number // 登录时间戳
+  email: string
+  phone?: string | null
+  user_type: 'customer' | 'vendor' | 'admin'
+  create_time: string
+  avatar?: string | null
 }
 
 /**
- * 获取验证码
+ * 更新用户信息
  */
-export interface ICaptcha {
-  captchaEnabled: boolean
-  uuid: string
-  image: string
+export interface UpdateInfoPayload {
+  username?: string
+  email?: string
+  phone?: string
 }
+
 /**
- * 上传成功的信息
+ * 修改密码请求体
+ */
+export interface UpdatePasswordPayload {
+  old_password: string
+  new_password: string
+}
+
+/**
+ * 上传成功回调信息
  */
 export interface IUploadSuccessInfo {
   fileId: number
@@ -59,39 +101,4 @@ export interface IUploadSuccessInfo {
   fileType: string
   fileBusinessType: string
   fileSize: number
-}
-/**
- * 更新用户信息
- */
-export interface IUpdateInfo {
-  id: number
-  name: string
-  sex: string
-}
-/**
- * 更新用户信息
- */
-export interface IUpdatePassword {
-  id: number
-  oldPassword: string
-  newPassword: string
-  confirmPassword: string
-}
-
-/**
- * 判断是否为单Token响应
- * @param tokenRes 登录响应数据
- * @returns 是否为单Token响应
- */
-export function isSingleTokenRes(tokenRes: IAuthLoginRes): tokenRes is ISingleTokenRes {
-  return 'token' in tokenRes && !('refreshToken' in tokenRes)
-}
-
-/**
- * 判断是否为双Token响应
- * @param tokenRes 登录响应数据
- * @returns 是否为双Token响应
- */
-export function isDoubleTokenRes(tokenRes: IAuthLoginRes): tokenRes is IDoubleTokenRes {
-  return 'accessToken' in tokenRes && 'refreshToken' in tokenRes
 }

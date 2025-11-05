@@ -129,7 +129,7 @@ function handleLogout() {
         </view>
         <!-- #endif -->
         <view class="user-id">
-          ID: {{ userInfo.userId }}
+          ID: {{ userInfo.id }}
         </view>
       </view>
     </view>
@@ -212,3 +212,4 @@ function handleLogout() {
   color: #999;
 }
 </style>
+

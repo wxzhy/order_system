@@ -1,8 +1,13 @@
 <script setup lang="tsx">
-import { reactive, ref } from 'vue';
-import { ElButton, ElImage, ElPopconfirm, ElTag } from 'element-plus';
+import { computed, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import type { RouteKey } from '@elegant-router/types';
+import { ElButton, ElImage, ElPopconfirm, ElResult, ElSkeleton, ElTag } from 'element-plus';
 import { batchDeleteItem, deleteItem, fetchGetItemList } from '@/service/api';
 import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
+import { useVendorStoreStatus } from '@/hooks/business/vendor-store';
+import { useTabStore } from '@/store/modules/tab';
+import { useRouterPush } from '@/hooks/common/router';
 import { $t } from '@/locales';
 import ItemOperateDrawer from './modules/item-operate-drawer.vue';
 import ItemSearch from './modules/item-search.vue';
@@ -16,7 +21,6 @@ function getInitSearchParams(): Api.SystemManage.ItemSearchParams {
     skip: 0,
     limit: 30,
     store_id: undefined,
-    store_name: undefined,
     item_name: undefined,
     description: undefined,
     min_price: undefined,
@@ -25,12 +29,50 @@ function getInitSearchParams(): Api.SystemManage.ItemSearchParams {
   };
 }
 
-const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+const { store, state, exists, canManage, loading: statusLoading, errorMessage, forbidden, loadStatus } = useVendorStoreStatus();
+const tabStore = useTabStore();
+const { routerPushByKey } = useRouterPush();
+const route = useRoute();
+const handledForbidden = ref(false);
+const storeId = computed(() => store.value?.id ?? null);
+
+function createEmptyList(): Api.SystemManage.ItemList {
+  return {
+    records: [],
+    total: 0,
+    current: 1,
+    size: searchParams.limit ?? 30
+  };
+}
+
+const {
+  columns,
+  columnChecks,
+  data,
+  getData,
+  getDataByPage,
+  loading,
+  mobilePagination
+} = useUIPaginatedTable<Api.SystemManage.ItemList, Api.SystemManage.Item>({
   paginationProps: {
     currentPage: 1,
     pageSize: 30
   },
-  api: () => fetchGetItemList(searchParams),
+  api: async () => {
+    if (!storeId.value || !canManage.value) {
+      return createEmptyList();
+    }
+
+    searchParams.store_id = storeId.value;
+    try {
+      return await fetchGetItemList(searchParams);
+    } catch (error: any) {
+      if (error?.response?.status === 403) {
+        return createEmptyList();
+      }
+      throw error;
+    }
+  },
   transform: response => {
     const { records = [], total = 0, current = 1, size = 30 } = response || {};
     return {
@@ -77,7 +119,6 @@ columns.value = [
       return <span class="text-#ccc">暂无图片</span>;
     }
   },
-  { prop: 'store_name', label: '商家名称', width: 150 },
   { prop: 'itemName', label: '餐点名称', minWidth: 150 },
   { prop: 'description', label: '描述', minWidth: 200 },
   {
@@ -85,7 +126,7 @@ columns.value = [
     label: '价格',
     width: 100,
     align: 'center',
-    formatter: (row: Api.SystemManage.Item) => `¥${row.price.toFixed(2)}`
+    formatter: (row: Api.SystemManage.Item) => `￥${row.price.toFixed(2)}`
   },
   {
     prop: 'quantity',
@@ -126,20 +167,47 @@ columns.value = [
 
 const checkedRowKeys = ref<number[]>([]);
 
+watch(
+  () => forbidden.value,
+  async val => {
+    if (val && !handledForbidden.value) {
+      handledForbidden.value = true;
+      const message = errorMessage.value || '当前账号无权使用商家中心，将返回首页';
+      window.$message?.error(message);
+      const currentRouteName = route.name as RouteKey | undefined;
+      await routerPushByKey('root');
+      if (currentRouteName && currentRouteName !== 'root') {
+        await tabStore.removeTabByRouteName(currentRouteName);
+      }
+    }
+  }
+);
+
+watch(
+  () => (canManage.value && storeId.value ? storeId.value : null),
+  value => {
+    if (value) {
+      searchParams.store_id = value;
+      getDataByPage();
+    }
+  },
+  { immediate: true }
+);
+
 async function handleBatchDelete() {
   if (checkedRowKeys.value.length === 0) {
-    window.$message?.warning('请至少选择一条数据');
+    window.$message?.warning('请先选择至少一条记录');
     return;
   }
 
   try {
     const result = await batchDeleteItem(checkedRowKeys.value);
     if (result.success_count > 0) {
-      window.$message?.success(`成功删除 ${result.success_count} 条数据`);
+      window.$message?.success(`成功删除 ${result.success_count} 条记录`);
       onBatchDeleted();
     }
     if (result.failed_count > 0) {
-      window.$message?.warning(`${result.failed_count} 条数据删除失败: ${result.message}`);
+      window.$message?.warning(`${result.failed_count} 条记录删除失败: ${result.message}`);
     }
   } catch (error: any) {
     window.$message?.error(error?.message || '批量删除失败');
@@ -158,34 +226,97 @@ async function handleDelete(id: number) {
 
 function resetSearchParams() {
   Object.assign(searchParams, getInitSearchParams());
+  if (storeId.value) {
+    searchParams.store_id = storeId.value;
+  }
 }
+
+const blockMessage = computed(() => {
+  if (!exists.value) {
+    return '您还未提交商家信息，请先完成商家注册。';
+  }
+  switch (state.value) {
+    case 'pending':
+      return '商家信息正在审核中，审核通过后即可管理餐点。';
+    case 'rejected':
+      return '商家信息审核未通过，请在商家注册页面修改后重新提交。';
+    default:
+      return errorMessage.value || '暂时无法加载商家信息，请稍后再试。';
+  }
+});
 </script>
 
 <template>
   <div class="h-full flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
     <ItemSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
-    <ElCard class="card-wrapper sm:flex-1-hidden" :body-style="{ flex: 1, overflow: 'hidden' }">
+
+    <ElSkeleton v-if="statusLoading" animated :rows="6" />
+
+    <ElResult
+      v-else-if="!canManage"
+      icon="info"
+      title="暂无法管理餐点"
+      :sub-title="blockMessage"
+    >
+      <template #extra>
+        <RouterLink to="/vendor/register">
+          <ElButton type="primary">前往商家注册</ElButton>
+        </RouterLink>
+        <ElButton class="ml-12px" @click="loadStatus">刷新状态</ElButton>
+      </template>
+    </ElResult>
+
+    <ElCard
+      v-else
+      class="card-wrapper sm:flex-1-hidden"
+      :body-style="{ flex: 1, overflow: 'hidden' }"
+    >
       <template #header>
         <div class="flex items-center justify-between">
           <p class="m-0 text-16px font-600">餐点列表</p>
-          <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
-            :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData" />
+          <TableHeaderOperation
+            v-model:columns="columnChecks"
+            :disabled-delete="checkedRowKeys.length === 0"
+            :loading="loading"
+            @add="handleAdd"
+            @delete="handleBatchDelete"
+            @refresh="getData"
+          />
         </div>
       </template>
-      <ElTable v-loading="loading" :data="data" border stripe height="100%"
-        @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))">
+      <ElTable
+        v-loading="loading"
+        :data="data"
+        border
+        stripe
+        height="100%"
+        @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))"
+      >
         <template v-for="column in columns" :key="column.prop">
           <ElTableColumn v-if="!column.hidden" v-bind="column" />
         </template>
       </ElTable>
       <template #footer>
-        <ElPagination v-model:current-page="mobilePagination.currentPage" v-model:page-size="mobilePagination.pageSize"
-          :total="mobilePagination.total" :page-sizes="[30, 50, 100]" :background="true"
-          layout="total, prev, pager, next, sizes" @current-change="getDataByPage" @size-change="getDataByPage" />
+        <ElPagination
+          v-model:current-page="mobilePagination.currentPage"
+          v-model:page-size="mobilePagination.pageSize"
+          :total="mobilePagination.total"
+          :page-sizes="[30, 50, 100]"
+          :background="true"
+          layout="total, prev, pager, next, sizes"
+          @current-change="getDataByPage"
+          @size-change="getDataByPage"
+        />
       </template>
     </ElCard>
-    <ItemOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
-      @submitted="getDataByPage" />
+
+    <ItemOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      :store-id="storeId ?? undefined"
+      @submitted="getDataByPage"
+    />
   </div>
 </template>
 

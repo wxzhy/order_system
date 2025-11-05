@@ -36,11 +36,6 @@ function search() {
         <ElForm :model="model" label-position="right" :label-width="80">
           <ElRow :gutter="24">
             <ElCol :lg="6" :md="8" :sm="12">
-              <ElFormItem label="商家名称" prop="store_name">
-                <ElInput v-model="model.store_name" placeholder="请输入商家名称" clearable />
-              </ElFormItem>
-            </ElCol>
-            <ElCol :lg="6" :md="8" :sm="12">
               <ElFormItem label="餐点名称" prop="item_name">
                 <ElInput v-model="model.item_name" placeholder="请输入餐点名称" clearable />
               </ElFormItem>

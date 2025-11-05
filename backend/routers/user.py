@@ -5,7 +5,7 @@ from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin
 from backend.models import User
 from backend.schemas import (
     UserResponse,
-    UserCreate,
+    AdminUserCreate,
     UserUpdate,
     UserPasswordUpdate,
     UserPasswordReset,
@@ -102,7 +102,7 @@ async def delete_my_account(current_user: CurrentUser, session: SessionDep):
 # ============ 管理员功能 ============
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
-    user_create: UserCreate, session: SessionDep, current_admin: CurrentAdmin
+    user_create: AdminUserCreate, session: SessionDep, current_admin: CurrentAdmin
 ):
     """管理员创建用户"""
     # 检查用户名是否已存在

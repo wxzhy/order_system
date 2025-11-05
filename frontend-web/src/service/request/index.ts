@@ -78,15 +78,9 @@ export const alova = createAlovaRequest(
         }
       }
 
-      function handleLogout() {
+      function handleUnauthorized() {
         showErrorMsg(state, message);
         authStore.resetStore();
-      }
-
-      function logoutAndCleanup() {
-        handleLogout();
-        window.removeEventListener('beforeunload', handleLogout);
-        state.errMsgStack = state.errMsgStack.filter(msg => msg !== message);
       }
 
       // HTTP 401 means unauthorized, logout user
@@ -96,30 +90,13 @@ export const alova = createAlovaRequest(
           throw error;
         }
 
-        handleLogout();
+        handleUnauthorized();
         throw error;
       }
 
-      // HTTP 403 means forbidden, show modal and logout
-      if (statusCode === 403 && !state.errMsgStack?.includes(message)) {
-        state.errMsgStack = [...(state.errMsgStack || []), message];
-
-        // prevent the user from refreshing the page
-        window.addEventListener('beforeunload', handleLogout);
-
-        if (window.$messageBox) {
-          window.$messageBox({
-            type: 'error',
-            title: $t('common.error'),
-            message,
-            confirmButtonText: $t('common.confirm'),
-            closeOnClickModal: false,
-            closeOnPressEscape: false,
-            callback() {
-              logoutAndCleanup();
-            }
-          });
-        }
+      // HTTP 403 means forbidden, only show error message and allow caller to handle
+      if (statusCode === 403) {
+        showErrorMsg(state, message);
         throw error;
       }
       showErrorMsg(state, message);
