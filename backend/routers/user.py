@@ -1,4 +1,6 @@
+import asyncio
 from fastapi import APIRouter, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin
@@ -34,7 +36,7 @@ async def update_my_info(
         statement = select(User).where(
             User.email == user_update.email, User.id != current_user.id
         )
-        existing_email = session.exec(statement).first()
+        existing_email = (await session.execute(statement)).scalars().first()
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱已被使用"
@@ -45,7 +47,7 @@ async def update_my_info(
         statement = select(User).where(
             User.username == user_update.username, User.id != current_user.id
         )
-        existing_username = session.exec(statement).first()
+        existing_username = (await session.execute(statement)).scalars().first()
         if existing_username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="用户名已被使用"
@@ -56,7 +58,7 @@ async def update_my_info(
         statement = select(User).where(
             User.phone == user_update.phone, User.id != current_user.id
         )
-        existing_phone = session.exec(statement).first()
+        existing_phone = (await session.execute(statement)).scalars().first()
         if existing_phone:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="手机号已被使用"
@@ -68,8 +70,8 @@ async def update_my_info(
         setattr(current_user, key, value)
 
     session.add(current_user)
-    session.commit()
-    session.refresh(current_user)
+    await session.commit()
+    await session.refresh(current_user)
     return current_user
 
 
@@ -87,15 +89,15 @@ async def update_my_password(
     # 更新密码
     current_user.hashed_password = get_password_hash(password_update.new_password)
     session.add(current_user)
-    session.commit()
+    await session.commit()
     return {"message": "密码修改成功"}
 
 
 @router.delete("/me")
 async def delete_my_account(current_user: CurrentUser, session: SessionDep):
     """注销当前用户账户"""
-    session.delete(current_user)
-    session.commit()
+    await session.delete(current_user)
+    await session.commit()
     return {"message": "账户已注销"}
 
 
@@ -107,7 +109,7 @@ async def create_user(
     """管理员创建用户"""
     # 检查用户名是否已存在
     statement = select(User).where(User.username == user_create.username)
-    existing_user = session.exec(statement).first()
+    existing_user = (await session.execute(statement)).scalars().first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="用户名已存在"
@@ -115,7 +117,7 @@ async def create_user(
 
     # 检查邮箱是否已存在
     statement = select(User).where(User.email == user_create.email)
-    existing_email = session.exec(statement).first()
+    existing_email = (await session.execute(statement)).scalars().first()
     if existing_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱已被注册"
@@ -124,7 +126,7 @@ async def create_user(
     # 检查手机号是否已存在
     if user_create.phone:
         statement = select(User).where(User.phone == user_create.phone)
-        existing_phone = session.exec(statement).first()
+        existing_phone = (await session.execute(statement)).scalars().first()
         if existing_phone:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="手机号已被注册"
@@ -140,8 +142,8 @@ async def create_user(
         user_type=user_create.user_type,
     )
     session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
+    await session.commit()
+    await session.refresh(db_user)
     return db_user
 
 
@@ -177,11 +179,11 @@ async def list_users(
         count_statement = count_statement.where(search_condition)
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    users = list(session.exec(statement).all())
+    users = list((await session.execute(statement)).scalars().all())
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -192,7 +194,7 @@ async def list_users(
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(user_id: int, session: SessionDep, current_admin: CurrentAdmin):
     """管理员查询指定用户信息"""
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
     return user
@@ -206,7 +208,7 @@ async def update_user(
     current_admin: CurrentAdmin,
 ):
     """管理员更新指定用户信息"""
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
 
@@ -215,7 +217,7 @@ async def update_user(
         statement = select(User).where(
             User.email == user_update.email, User.id != user_id
         )
-        existing_email = session.exec(statement).first()
+        existing_email = (await session.execute(statement)).scalars().first()
         if existing_email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱已被使用"
@@ -227,20 +229,20 @@ async def update_user(
         setattr(user, key, value)
 
     session.add(user)
-    session.commit()
-    session.refresh(user)
+    await session.commit()
+    await session.refresh(user)
     return user
 
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, session: SessionDep, current_admin: CurrentAdmin):
     """管理员删除指定用户"""
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
 
-    session.delete(user)
-    session.commit()
+    await session.delete(user)
+    await session.commit()
     return {"message": "用户已删除"}
 
 
@@ -255,7 +257,7 @@ async def batch_delete_users(
 
     for user_id in batch_request.ids:
         try:
-            user = session.get(User, user_id)
+            user = await session.get(User, user_id)
             if user:
                 # 防止删除管理员自己
                 if user.id == current_admin.id:
@@ -263,7 +265,7 @@ async def batch_delete_users(
                     failed_ids.append(user_id)
                     continue
 
-                session.delete(user)
+                await session.delete(user)
                 success_count += 1
             else:
                 failed_count += 1
@@ -272,11 +274,11 @@ async def batch_delete_users(
             failed_count += 1
             failed_ids.append(user_id)
             # 如果发生错误，回滚当前事务
-            session.rollback()
+            await session.rollback()
 
     # 提交所有成功的删除操作
     if success_count > 0:
-        session.commit()
+        await session.commit()
 
     return BatchDeleteResponse(
         success_count=success_count,
@@ -294,14 +296,14 @@ async def admin_reset_user_password(
     new_password: str = "123456",
 ):
     """管理员重置指定用户密码"""
-    user = session.get(User, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
 
     # 更新密码为默认密码或指定密码
     user.hashed_password = get_password_hash(new_password)
     session.add(user)
-    session.commit()
+    await session.commit()
     return {"message": f"密码已重置为: {new_password}"}
 
 
@@ -310,7 +312,7 @@ async def reset_password(reset_data: UserPasswordReset, session: SessionDep):
     """找回密码（需要验证码）"""
     # 查找用户
     statement = select(User).where(User.email == reset_data.email)
-    user = session.exec(statement).first()
+    user = (await session.execute(statement)).scalars().first()
 
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -321,5 +323,5 @@ async def reset_password(reset_data: UserPasswordReset, session: SessionDep):
     # 更新密码
     user.hashed_password = get_password_hash(reset_data.new_password)
     session.add(user)
-    session.commit()
+    await session.commit()
     return {"message": "密码重置成功"}

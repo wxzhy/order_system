@@ -1,6 +1,9 @@
 from datetime import datetime
+import asyncio
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select, Session
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.dependencies import (
     SessionDep,
@@ -8,7 +11,16 @@ from backend.dependencies import (
     CurrentVendor,
     CurrentCustomer,
 )
-from backend.models import Order, OrderItem, Item, Store, OrderState, UserType, User
+from backend.models import (
+    Order,
+    OrderItem,
+    Item,
+    Store,
+    OrderState,
+    UserType,
+    User,
+    StoreState,
+)
 from backend.schemas import (
     OrderCreate,
     OrderUpdate,
@@ -22,17 +34,17 @@ from backend.schemas import (
 router = APIRouter(prefix="/order", tags=["订单管理"])
 
 
-def populate_order_response(order: Order, session: Session) -> OrderResponse:
+async def populate_order_response(order: Order, session: AsyncSession) -> OrderResponse:
     """填充订单响应数据，包括菜品名称、用户名、商家名和总金额"""
     order_response = OrderResponse.model_validate(order)
 
     # 查询用户名
-    user = session.get(User, order.user_id)
+    user = await session.get(User, order.user_id)
     if user:
         order_response.user_name = user.username
 
     # 查询商家名
-    store = session.get(Store, order.store_id)
+    store = await session.get(Store, order.store_id)
     if store:
         order_response.store_name = store.name
 
@@ -43,7 +55,7 @@ def populate_order_response(order: Order, session: Session) -> OrderResponse:
     for order_item in order.items:
         item_response = OrderItemResponse.model_validate(order_item)
         # 查询菜品名称
-        item = session.get(Item, order_item.item_id)
+        item = await session.get(Item, order_item.item_id)
         if item:
             item_response.item_name = item.name
         total_amount += order_item.item_price * order_item.quantity
@@ -61,7 +73,7 @@ async def create_order(
 ):
     """普通用户创建订单"""
     # 验证商家是否存在
-    store = session.get(Store, order_create.store_id)
+    store = await session.get(Store, order_create.store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -70,7 +82,7 @@ async def create_order(
     order_items_data = []
 
     for item_data in order_create.items:
-        item = session.get(Item, item_data.item_id)
+        item = await session.get(Item, item_data.item_id)
         if not item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -116,8 +128,8 @@ async def create_order(
         state=OrderState.PENDING,
     )
     session.add(db_order)
-    session.commit()
-    session.refresh(db_order)
+    await session.commit()
+    await session.refresh(db_order)
 
     # 确保订单ID存在
     if db_order.id is None:
@@ -132,16 +144,24 @@ async def create_order(
         session.add(order_item)
 
         # 减少库存
-        item = session.get(Item, item_data["item_id"])
+        item = await session.get(Item, item_data["item_id"])
         if item:
             item.quantity -= item_data["quantity"]
             session.add(item)
 
-    session.commit()
-    session.refresh(db_order)
+    await session.commit()
+
+    # 重新查询订单以获取所有关系数据（包括 items 和嵌套的 item）
+    statement = (
+        select(Order)
+        .where(Order.id == db_order.id)
+        .options(selectinload(Order.items).selectinload(OrderItem.item))
+    )
+    result = await session.execute(statement)
+    db_order = result.scalar_one()
 
     # 构造响应
-    return populate_order_response(db_order, session)
+    return await populate_order_response(db_order, session)
 
 
 @router.get("/", response_model=PageResponse[OrderResponse])
@@ -170,14 +190,16 @@ async def list_orders(
     elif current_user.user_type == UserType.VENDOR:
         # 商家查看自己店铺的订单
         store_statement = select(Store).where(Store.owner_id == current_user.id)
-        store = session.exec(store_statement).first()
+        store = (await session.execute(store_statement)).scalars().first()
         if not store:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="商家尚未提交商家信息，请先完成商家注册"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="商家尚未提交商家信息，请先完成商家注册",
             )
         if store.state != StoreState.APPROVED:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="商家信息未审核通过，暂无法查看订单"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="商家信息未审核通过，暂无法查看订单",
             )
         statement = statement.where(Order.store_id == store.id)
         count_statement = count_statement.where(Order.store_id == store.id)
@@ -217,14 +239,20 @@ async def list_orders(
         count_statement = count_statement.where(Order.user_id == user_id)
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
-    # 分页查询
-    statement = statement.offset(skip).limit(limit)
-    orders = list(session.exec(statement).all())
+    # 分页查询 - 使用 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+    statement = (
+        statement.options(selectinload(Order.items).selectinload(OrderItem.item))
+        .offset(skip)
+        .limit(limit)
+    )
+    orders = list((await session.execute(statement)).scalars().all())
 
     # 填充订单响应数据
-    result = [populate_order_response(order, session) for order in orders]
+    result = await asyncio.gather(
+        *[populate_order_response(order, session) for order in orders]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -255,14 +283,20 @@ async def get_my_orders(
         count_statement = count_statement.where(Order.state == state)
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
-    # 分页查询
-    statement = statement.offset(skip).limit(limit)
-    orders = list(session.exec(statement).all())
+    # 分页查询 - 使用 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+    statement = (
+        statement.options(selectinload(Order.items).selectinload(OrderItem.item))
+        .offset(skip)
+        .limit(limit)
+    )
+    orders = list((await session.execute(statement)).scalars().all())
 
     # 填充订单响应数据
-    result = [populate_order_response(order, session) for order in orders]
+    result = await asyncio.gather(
+        *[populate_order_response(order, session) for order in orders]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -283,7 +317,7 @@ async def get_my_store_orders(
 
     # 获取商家的店铺
     store_statement = select(Store).where(Store.owner_id == current_vendor.id)
-    store = session.exec(store_statement).first()
+    store = (await session.execute(store_statement)).scalars().first()
 
     if not store:
         raise HTTPException(
@@ -300,14 +334,20 @@ async def get_my_store_orders(
         count_statement = count_statement.where(Order.state == state)
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
-    # 分页查询
-    statement = statement.offset(skip).limit(limit)
-    orders = list(session.exec(statement).all())
+    # 分页查询 - 使用 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+    statement = (
+        statement.options(selectinload(Order.items).selectinload(OrderItem.item))
+        .offset(skip)
+        .limit(limit)
+    )
+    orders = list((await session.execute(statement)).scalars().all())
 
     # 填充订单响应数据
-    result = [populate_order_response(order, session) for order in orders]
+    result = await asyncio.gather(
+        *[populate_order_response(order, session) for order in orders]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -318,7 +358,15 @@ async def get_my_store_orders(
 @router.get("/{order_id}", response_model=OrderResponse)
 async def get_order(order_id: int, session: SessionDep, current_user: CurrentUser):
     """查询指定订单信息"""
-    order = session.get(Order, order_id)
+    # 使用 select 和 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+    statement = (
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.items).selectinload(OrderItem.item))
+    )
+    result = await session.execute(statement)
+    order = result.scalar_one_or_none()
+
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订单不存在")
 
@@ -330,18 +378,19 @@ async def get_order(order_id: int, session: SessionDep, current_user: CurrentUse
             )
     elif current_user.user_type == UserType.VENDOR:
         store_statement = select(Store).where(Store.owner_id == current_user.id)
-        store = session.exec(store_statement).first()
+        store = (await session.execute(store_statement)).scalars().first()
         if not store or order.store_id != store.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限查看该订单"
             )
         if store.state != StoreState.APPROVED:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="商家信息未审核通过，暂无法查看订单"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="商家信息未审核通过，暂无法查看订单",
             )
 
     # 返回订单响应
-    return populate_order_response(order, session)
+    return await populate_order_response(order, session)
 
 
 @router.put("/{order_id}", response_model=OrderResponse)
@@ -352,7 +401,15 @@ async def update_order(
     session: SessionDep,
 ):
     """更新订单状态（商家审核或用户取消）"""
-    order = session.get(Order, order_id)
+    # 使用 select 和 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+    statement = (
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.items).selectinload(OrderItem.item))
+    )
+    result = await session.execute(statement)
+    order = result.scalar_one_or_none()
+
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订单不存在")
 
@@ -374,7 +431,7 @@ async def update_order(
 
         # 恢复库存
         for order_item in order.items:
-            item = session.get(Item, order_item.item_id)
+            item = await session.get(Item, order_item.item_id)
             if item:
                 item.quantity += order_item.quantity
                 session.add(item)
@@ -382,14 +439,15 @@ async def update_order(
     elif current_user.user_type == UserType.VENDOR:
         # 商家审核订单
         store_statement = select(Store).where(Store.owner_id == current_user.id)
-        store = session.exec(store_statement).first()
+        store = (await session.execute(store_statement)).scalars().first()
         if not store or order.store_id != store.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限修改该订单"
             )
         if store.state != StoreState.APPROVED:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="商家信息未审核通过，暂无法审批订单"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="商家信息未审核通过，暂无法审批订单",
             )
 
         if order.state != OrderState.PENDING:
@@ -400,7 +458,7 @@ async def update_order(
         if order_update.state == OrderState.CANCELLED:
             # 商家拒绝订单，恢复库存
             for order_item in order.items:
-                item = session.get(Item, order_item.item_id)
+                item = await session.get(Item, order_item.item_id)
                 if item:
                     item.quantity += order_item.quantity
                     session.add(item)
@@ -419,17 +477,25 @@ async def update_order(
         order.review_time = datetime.utcnow()
 
     session.add(order)
-    session.commit()
-    session.refresh(order)
+    await session.commit()
+    await session.refresh(order)
 
     # 返回订单响应
-    return populate_order_response(order, session)
+    return await populate_order_response(order, session)
 
 
 @router.delete("/{order_id}")
 async def delete_order(order_id: int, session: SessionDep, current_user: CurrentUser):
     """删除订单（用户删除未审核订单或管理员删除任意订单）"""
-    order = session.get(Order, order_id)
+    # 使用 select 和 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+    statement = (
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.items).selectinload(OrderItem.item))
+    )
+    result = await session.execute(statement)
+    order = result.scalar_one_or_none()
+
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="订单不存在")
 
@@ -446,7 +512,7 @@ async def delete_order(order_id: int, session: SessionDep, current_user: Current
 
         # 恢复库存
         for order_item in order.items:
-            item = session.get(Item, order_item.item_id)
+            item = await session.get(Item, order_item.item_id)
             if item:
                 item.quantity += order_item.quantity
                 session.add(item)
@@ -456,8 +522,8 @@ async def delete_order(order_id: int, session: SessionDep, current_user: Current
             status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限删除该订单"
         )
 
-    session.delete(order)
-    session.commit()
+    await session.delete(order)
+    await session.commit()
     return {"message": "订单已删除"}
 
 
@@ -472,7 +538,15 @@ async def batch_delete_orders(
 
     for order_id in batch_request.ids:
         try:
-            order = session.get(Order, order_id)
+            # 使用 select 和 selectinload 预加载 items 关系，并嵌套预加载每个 OrderItem 的 item 关系
+            statement = (
+                select(Order)
+                .where(Order.id == order_id)
+                .options(selectinload(Order.items).selectinload(OrderItem.item))
+            )
+            result = await session.execute(statement)
+            order = result.scalar_one_or_none()
+
             if not order:
                 failed_count += 1
                 failed_ids.append(order_id)
@@ -492,7 +566,7 @@ async def batch_delete_orders(
 
                 # 恢复库存
                 for order_item in order.items:
-                    item = session.get(Item, order_item.item_id)
+                    item = await session.get(Item, order_item.item_id)
                     if item:
                         item.quantity += order_item.quantity
                         session.add(item)
@@ -503,17 +577,17 @@ async def batch_delete_orders(
                 failed_ids.append(order_id)
                 continue
 
-            session.delete(order)
+            await session.delete(order)
             success_count += 1
         except Exception:
             failed_count += 1
             failed_ids.append(order_id)
             # 如果发生错误，回滚当前事务
-            session.rollback()
+            await session.rollback()
 
     # 提交所有成功的删除操作
     if success_count > 0:
-        session.commit()
+        await session.commit()
 
     return BatchDeleteResponse(
         success_count=success_count,

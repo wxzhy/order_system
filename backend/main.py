@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import traceback
 
 from backend.database import lifespan
 from backend.routers import auth, user, store, item, order, comment, stats
@@ -10,6 +12,24 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+# 全局异常处理器
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """捕获所有未处理的异常并返回详细错误信息"""
+    error_detail = {
+        "error": str(exc),
+        "type": type(exc).__name__,
+        "traceback": traceback.format_exc(),
+    }
+    print(f"\n{'=' * 50}")
+    print(f"ERROR in {request.method} {request.url}")
+    print(f"Exception: {type(exc).__name__}: {exc}")
+    print(f"Traceback:\n{traceback.format_exc()}")
+    print(f"{'=' * 50}\n")
+    return JSONResponse(status_code=500, content=error_detail)
+
 
 # 配置CORS中间件
 app.add_middleware(

@@ -1,4 +1,6 @@
+import asyncio
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from fastapi import APIRouter
 
@@ -33,7 +35,7 @@ async def get_personal_stats(current_user: CurrentUser, session: SessionDep):
 
     if current_user.user_type == UserType.VENDOR:
         store_stmt = select(Store).where(Store.owner_id == current_user.id)
-        stores = list(session.exec(store_stmt).all())
+        stores = list((await session.execute(store_stmt)).scalars().all())
         store_ids = [store.id for store in stores if store.id is not None]
 
         store_state = stores[0].state if stores else None
@@ -43,17 +45,29 @@ async def get_personal_stats(current_user: CurrentUser, session: SessionDep):
         pending_total = 0
 
         if store_ids:
-            item_total = session.exec(
-                select(func.count()).select_from(Item).where(Item.store_id.in_(store_ids))
-            ).one()
-            order_total = session.exec(
-                select(func.count()).select_from(Order).where(Order.store_id.in_(store_ids))
-            ).one()
-            pending_total = session.exec(
-                select(func.count())
-                .select_from(Order)
-                .where(Order.store_id.in_(store_ids), Order.state == OrderState.PENDING)
-            ).one()
+            item_total = (
+                await session.execute(
+                    select(func.count())
+                    .select_from(Item)
+                    .where(Item.store_id.in_(store_ids))
+                )
+            ).scalar_one()
+            order_total = (
+                await session.execute(
+                    select(func.count())
+                    .select_from(Order)
+                    .where(Order.store_id.in_(store_ids))
+                )
+            ).scalar_one()
+            pending_total = (
+                await session.execute(
+                    select(func.count())
+                    .select_from(Order)
+                    .where(
+                        Order.store_id.in_(store_ids), Order.state == OrderState.PENDING
+                    )
+                )
+            ).scalar_one()
 
         response.vendor = VendorPersonalStats(
             store_exists=bool(store_ids),
@@ -66,16 +80,20 @@ async def get_personal_stats(current_user: CurrentUser, session: SessionDep):
         return response
 
     if current_user.user_type == UserType.ADMIN:
-        pending_store_review = session.exec(
-            select(func.count())
-            .select_from(Store)
-            .where(Store.state == StoreState.PENDING)
-        ).one()
-        pending_comment_review = session.exec(
-            select(func.count())
-            .select_from(Comment)
-            .where(Comment.state == CommentState.PENDING)
-        ).one()
+        pending_store_review = (
+            await session.execute(
+                select(func.count())
+                .select_from(Store)
+                .where(Store.state == StoreState.PENDING)
+            )
+        ).scalar_one()
+        pending_comment_review = (
+            await session.execute(
+                select(func.count())
+                .select_from(Comment)
+                .where(Comment.state == CommentState.PENDING)
+            )
+        ).scalar_one()
 
         response.admin = AdminPersonalStats(
             pending_store_review=pending_store_review or 0,
@@ -84,14 +102,20 @@ async def get_personal_stats(current_user: CurrentUser, session: SessionDep):
 
         return response
 
-    order_total = session.exec(
-        select(func.count()).select_from(Order).where(Order.user_id == current_user.id)
-    ).one()
-    pending_total = session.exec(
-        select(func.count())
-        .select_from(Order)
-        .where(Order.user_id == current_user.id, Order.state == OrderState.PENDING)
-    ).one()
+    order_total = (
+        await session.execute(
+            select(func.count())
+            .select_from(Order)
+            .where(Order.user_id == current_user.id)
+        )
+    ).scalar_one()
+    pending_total = (
+        await session.execute(
+            select(func.count())
+            .select_from(Order)
+            .where(Order.user_id == current_user.id, Order.state == OrderState.PENDING)
+        )
+    ).scalar_one()
 
     response.customer = CustomerPersonalStats(
         order_total=order_total or 0, order_pending=pending_total or 0
@@ -103,20 +127,26 @@ async def get_personal_stats(current_user: CurrentUser, session: SessionDep):
 @router.get("/site", response_model=SiteStatsResponse)
 async def get_site_stats(_current_user: CurrentUser, session: SessionDep):
     """Return aggregated site statistics."""
-    user_total = session.exec(select(func.count()).select_from(User)).one()
-    merchant_total = session.exec(
-        select(func.count())
-        .select_from(Store)
-        .where(Store.state == StoreState.APPROVED)
-    ).one()
-    order_total = session.exec(select(func.count()).select_from(Order)).one()
+    user_total = (
+        await session.execute(select(func.count()).select_from(User))
+    ).scalar_one()
+    merchant_total = (
+        await session.execute(
+            select(func.count())
+            .select_from(Store)
+            .where(Store.state == StoreState.APPROVED)
+        )
+    ).scalar_one()
+    order_total = (
+        await session.execute(select(func.count()).select_from(Order))
+    ).scalar_one()
 
     turnover_stmt = (
         select(func.coalesce(func.sum(OrderItem.item_price * OrderItem.quantity), 0.0))
         .join(Order, OrderItem.order_id == Order.id)
         .where(Order.state.in_([OrderState.APPROVED, OrderState.COMPLETED]))
     )
-    turnover_total = session.exec(turnover_stmt).one()
+    turnover_total = (await session.execute(turnover_stmt)).scalar_one()
 
     return SiteStatsResponse(
         user_total=user_total or 0,

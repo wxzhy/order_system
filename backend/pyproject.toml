@@ -5,8 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "asyncmy>=0.2.10",
+    "cryptography>=46.0.3",
     "fastapi[all]>=0.120.1",
-    "mysqlclient>=2.2.7",
     "passlib>=1.7.4",
     "pyjwt>=2.10.1",
     "sqlmodel>=0.0.27",

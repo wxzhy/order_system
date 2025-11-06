@@ -1,6 +1,8 @@
+import asyncio
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select, Session
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentVendor
 from backend.models import Store, StoreState, UserType, User
@@ -18,11 +20,11 @@ from backend.schemas import (
 router = APIRouter(prefix="/store", tags=["商家管理"])
 
 
-def populate_store_response(store: Store, session: Session) -> StoreResponse:
+async def populate_store_response(store: Store, session: AsyncSession) -> StoreResponse:
     """填充商家响应数据，添加店主名称"""
     response = StoreResponse.model_validate(store)
     # 查询店主信息
-    user = session.get(User, store.owner_id)
+    user = await session.get(User, store.owner_id)
     if user:
         response.owner_name = user.username
     return response
@@ -41,7 +43,7 @@ async def create_store(
 
     # 检查商家是否已经发布过商家信息
     statement = select(Store).where(Store.owner_id == current_user.id)
-    existing_store = session.exec(statement).first()
+    existing_store = (await session.execute(statement)).scalars().first()
     if existing_store:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -61,8 +63,8 @@ async def create_store(
         state=StoreState.PENDING,
     )
     session.add(db_store)
-    session.commit()
-    session.refresh(db_store)
+    await session.commit()
+    await session.refresh(db_store)
     return db_store
 
 
@@ -124,14 +126,16 @@ async def list_stores(
         count_statement = count_statement.where(Store.owner_id == owner_id)
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    stores = list(session.exec(statement).all())
+    stores = list((await session.execute(statement)).scalars().all())
 
     # 填充商家响应数据
-    result = [populate_store_response(store, session) for store in stores]
+    result = await asyncio.gather(
+        *[populate_store_response(store, session) for store in stores]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -143,7 +147,7 @@ async def list_stores(
 async def get_my_store(current_vendor: CurrentVendor, session: SessionDep):
     """商家查询自己的商家信息"""
     statement = select(Store).where(Store.owner_id == current_vendor.id)
-    store = session.exec(statement).first()
+    store = (await session.execute(statement)).scalars().first()
     if not store:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="您还未发布商家信息"
@@ -151,24 +155,22 @@ async def get_my_store(current_vendor: CurrentVendor, session: SessionDep):
     return store
 
 
-
-
 @router.get("/my/status", response_model=VendorStoreStatus)
 async def get_my_store_status(current_vendor: CurrentVendor, session: SessionDep):
     """�̼Ҳ�ȡ�Լ��̼���Ϣ״̬"""
     statement = select(Store).where(Store.owner_id == current_vendor.id)
-    store = session.exec(statement).first()
+    store = (await session.execute(statement)).scalars().first()
 
     if not store:
         return VendorStoreStatus(exists=False, can_manage=False)
 
-    store_response = populate_store_response(store, session)
+    store_response = await populate_store_response(store, session)
 
     return VendorStoreStatus(
         exists=True,
         state=store.state,
         can_manage=store.state == StoreState.APPROVED,
-        store=store_response
+        store=store_response,
     )
 
 
@@ -176,9 +178,9 @@ async def get_my_store_status(current_vendor: CurrentVendor, session: SessionDep
 async def update_my_store(
     store_update: StoreUpdate, current_vendor: CurrentVendor, session: SessionDep
 ):
-    """�̸̼��Լ���̼���Ϣ�������й�ˡ"""
+    """�̸̼��Լ���̼���Ϣ�������й�ˡ"""
     statement = select(Store).where(Store.owner_id == current_vendor.id)
-    store = session.exec(statement).first()
+    store = (await session.execute(statement)).scalars().first()
     if not store:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="����δ�����̼���Ϣ"
@@ -192,14 +194,15 @@ async def update_my_store(
     store.review_time = None
 
     session.add(store)
-    session.commit()
-    session.refresh(store)
-    return populate_store_response(store, session)
+    await session.commit()
+    await session.refresh(store)
+    return await populate_store_response(store, session)
+
 
 @router.get("/{store_id}", response_model=StoreResponse)
 async def get_store(store_id: int, session: SessionDep):
     """查询指定商家信息"""
-    store = session.get(Store, store_id)
+    store = await session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
     return store
@@ -213,7 +216,7 @@ async def update_store(
     session: SessionDep,
 ):
     """更新商家信息（商家本人或管理员）"""
-    store = session.get(Store, store_id)
+    store = await session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -234,15 +237,15 @@ async def update_store(
         store.review_time = None
 
     session.add(store)
-    session.commit()
-    session.refresh(store)
+    await session.commit()
+    await session.refresh(store)
     return store
 
 
 @router.delete("/{store_id}")
 async def delete_store(store_id: int, current_user: CurrentUser, session: SessionDep):
     """删除商家信息（商家本人或管理员）"""
-    store = session.get(Store, store_id)
+    store = await session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -252,8 +255,8 @@ async def delete_store(store_id: int, current_user: CurrentUser, session: Sessio
             status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限删除该商家信息"
         )
 
-    session.delete(store)
-    session.commit()
+    await session.delete(store)
+    await session.commit()
     return {"message": "商家信息已删除"}
 
 
@@ -268,9 +271,9 @@ async def batch_delete_stores(
 
     for store_id in batch_request.ids:
         try:
-            store = session.get(Store, store_id)
+            store = await session.get(Store, store_id)
             if store:
-                session.delete(store)
+                await session.delete(store)
                 success_count += 1
             else:
                 failed_count += 1
@@ -279,11 +282,11 @@ async def batch_delete_stores(
             failed_count += 1
             failed_ids.append(store_id)
             # 如果发生错误，回滚当前事务
-            session.rollback()
+            await session.rollback()
 
     # 提交所有成功的删除操作
     if success_count > 0:
-        session.commit()
+        await session.commit()
 
     return BatchDeleteResponse(
         success_count=success_count,
@@ -338,14 +341,16 @@ async def list_pending_stores(
         )  # type: ignore
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    stores = list(session.exec(statement).all())
+    stores = list((await session.execute(statement)).scalars().all())
 
     # 填充商家响应数据
-    result = [populate_store_response(store, session) for store in stores]
+    result = await asyncio.gather(
+        *[populate_store_response(store, session) for store in stores]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -358,7 +363,7 @@ async def review_store(
     store_id: int, review: StoreReview, current_admin: CurrentAdmin, session: SessionDep
 ):
     """管理员审核商家信息"""
-    store = session.get(Store, store_id)
+    store = await session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -367,8 +372,8 @@ async def review_store(
     store.review_time = datetime.utcnow()
 
     session.add(store)
-    session.commit()
-    session.refresh(store)
+    await session.commit()
+    await session.refresh(store)
 
     # TODO: 发送审核结果通知给商家
 

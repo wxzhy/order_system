@@ -2,18 +2,25 @@
 初始化脚本 - 创建默认管理员账户
 """
 
-from sqlmodel import Session, select
-from backend.database import engine
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlmodel import select
+from backend.database import get_engine
 from backend.models import User, UserType
 from backend.security import get_password_hash
 
 
-def create_default_admin():
+async def create_default_admin():
     """创建默认管理员账户"""
-    with Session(engine) as session:
+    engine = await get_engine()
+    async_session = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with async_session() as session:
         # 检查是否已存在管理员
         statement = select(User).where(User.user_type == UserType.ADMIN)
-        existing_admin = session.exec(statement).first()
+        existing_admin = (await session.execute(statement)).scalars().first()
 
         if existing_admin:
             print("管理员账户已存在，无需创建")
@@ -29,8 +36,8 @@ def create_default_admin():
         )
 
         session.add(admin)
-        session.commit()
-        session.refresh(admin)
+        await session.commit()
+        await session.refresh(admin)
 
         print("=" * 50)
         print("默认管理员账户创建成功！")
@@ -45,4 +52,4 @@ def create_default_admin():
 
 
 if __name__ == "__main__":
-    create_default_admin()
+    asyncio.run(create_default_admin())

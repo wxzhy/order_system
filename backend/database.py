@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from sqlmodel import SQLModel
-from sqlmodel import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from fastapi import FastAPI
 import urllib.parse
 
@@ -17,11 +17,10 @@ escaped_password = urllib.parse.quote_plus(DB_PASS)
 
 # 4. 使用 f-string 安全地构建连接字符串
 mysql_url = (
-    f"mysql+mysqldb://{DB_USER}:{escaped_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    f"mysql+asyncmy://{DB_USER}:{escaped_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
 
 # (可选) 打印出来看看转义后的效果
-# 它会打印出: mysql+mysqldb://order:1Qaz%402wsx%21%23@localhost:3306/ordersystem
 print(f"构建的URL: {mysql_url}")
 
 engine = None
@@ -36,9 +35,11 @@ async def get_engine():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global engine
-    engine = create_engine(mysql_url, echo=True)
+    engine = create_async_engine(mysql_url, echo=True,pool_pre_ping=True)
     if engine is None:
         raise Exception("无法创建数据库引擎")
-    SQLModel.metadata.create_all(engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    # SQLModel.metadata.create_all(engine.sync_engine)
     yield
-    engine.dispose()
+    await engine.dispose()

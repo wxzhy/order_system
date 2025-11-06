@@ -1,5 +1,7 @@
+import asyncio
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select, Session
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentVendor
 from backend.models import Item, Store, UserType, StoreState
@@ -15,12 +17,12 @@ from backend.schemas import (
 router = APIRouter(prefix="/item", tags=["餐点管理"])
 
 
-def populate_item_response(item: Item, session: Session) -> ItemResponse:
+async def populate_item_response(item: Item, session: AsyncSession) -> ItemResponse:
     """填充餐点响应数据，包括商家名"""
     item_response = ItemResponse.model_validate(item)
 
     # 查询商家名
-    store = session.get(Store, item.store_id)
+    store = await session.get(Store, item.store_id)
     if store:
         item_response.store_name = store.name
 
@@ -33,7 +35,7 @@ async def create_item(
 ):
     """商家添加餐点信息"""
     # 验证商家是否拥有该店铺
-    store = session.get(Store, item_create.store_id)
+    store = await session.get(Store, item_create.store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -52,9 +54,9 @@ async def create_item(
     # 创建餐点
     db_item = Item(**item_create.model_dump(by_alias=True))
     session.add(db_item)
-    session.commit()
-    session.refresh(db_item)
-    return populate_item_response(db_item, session)
+    await session.commit()
+    await session.refresh(db_item)
+    return await populate_item_response(db_item, session)
 
 
 @router.get("/", response_model=PageResponse[ItemResponse])
@@ -81,7 +83,7 @@ async def list_items(
     if current_user.user_type == UserType.VENDOR:
         # 查询商家的店铺ID
         store_statement = select(Store).where(Store.owner_id == current_user.id)
-        store = session.exec(store_statement).first()
+        store = (await session.execute(store_statement)).scalars().first()
         if not store:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -139,14 +141,16 @@ async def list_items(
             count_statement = count_statement.where(Item.quantity == 0)
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    items = list(session.exec(statement).all())
+    items = list((await session.execute(statement)).scalars().all())
 
     # 填充餐点响应数据
-    result = [populate_item_response(item, session) for item in items]
+    result = await asyncio.gather(
+        *[populate_item_response(item, session) for item in items]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -165,7 +169,7 @@ async def list_store_items(
     from sqlalchemy import func
 
     # 验证商家是否存在
-    store = session.get(Store, store_id)
+    store = await session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -175,17 +179,19 @@ async def list_store_items(
     )
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    items = list(session.exec(statement).all())
+    items = list((await session.execute(statement)).scalars().all())
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
     # 填充商家名
-    items_with_store_name = [populate_item_response(item, session) for item in items]
+    items_with_store_name = await asyncio.gather(
+        *[populate_item_response(item, session) for item in items]
+    )
 
     return PageResponse(
         records=items_with_store_name, total=total, current=current, size=limit
@@ -195,10 +201,10 @@ async def list_store_items(
 @router.get("/{item_id}", response_model=ItemResponse)
 async def get_item(item_id: int, session: SessionDep):
     """查询指定餐点信息"""
-    item = session.get(Item, item_id)
+    item = await session.get(Item, item_id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
-    return populate_item_response(item, session)
+    return await populate_item_response(item, session)
 
 
 @router.put("/{item_id}", response_model=ItemResponse)
@@ -209,12 +215,12 @@ async def update_item(
     session: SessionDep,
 ):
     """更新餐点信息（商家本人或管理员）"""
-    item = session.get(Item, item_id)
+    item = await session.get(Item, item_id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
 
     # 获取商家信息验证权限
-    store = session.get(Store, item.store_id)
+    store = await session.get(Store, item.store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -230,20 +236,20 @@ async def update_item(
         setattr(item, key, value)
 
     session.add(item)
-    session.commit()
-    session.refresh(item)
-    return populate_item_response(item, session)
+    await session.commit()
+    await session.refresh(item)
+    return await populate_item_response(item, session)
 
 
 @router.delete("/{item_id}")
 async def delete_item(item_id: int, current_user: CurrentUser, session: SessionDep):
     """删除餐点信息（商家本人或管理员）"""
-    item = session.get(Item, item_id)
+    item = await session.get(Item, item_id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="餐点不存在")
 
     # 获取商家信息验证权限
-    store = session.get(Store, item.store_id)
+    store = await session.get(Store, item.store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -255,8 +261,8 @@ async def delete_item(item_id: int, current_user: CurrentUser, session: SessionD
 
     # TODO: 检查是否有未完成的订单包含该餐点
 
-    session.delete(item)
-    session.commit()
+    await session.delete(item)
+    await session.commit()
     return {"message": "餐点已删除"}
 
 
@@ -271,14 +277,14 @@ async def batch_delete_items(
 
     for item_id in batch_request.ids:
         try:
-            item = session.get(Item, item_id)
+            item = await session.get(Item, item_id)
             if not item:
                 failed_count += 1
                 failed_ids.append(item_id)
                 continue
 
             # 获取商家信息验证权限
-            store = session.get(Store, item.store_id)
+            store = await session.get(Store, item.store_id)
             if not store:
                 failed_count += 1
                 failed_ids.append(item_id)
@@ -293,17 +299,17 @@ async def batch_delete_items(
                 failed_ids.append(item_id)
                 continue
 
-            session.delete(item)
+            await session.delete(item)
             success_count += 1
         except Exception:
             failed_count += 1
             failed_ids.append(item_id)
             # 如果发生错误，回滚当前事务
-            session.rollback()
+            await session.rollback()
 
     # 提交所有成功的删除操作
     if success_count > 0:
-        session.commit()
+        await session.commit()
 
     return BatchDeleteResponse(
         success_count=success_count,

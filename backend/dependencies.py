@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 import jwt
 from backend.database import get_engine
 from backend.models import User, UserType
@@ -14,11 +14,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login/token")
 async def get_session():
     """获取数据库会话"""
     engine = await get_engine()
-    with Session(engine) as session:
+    async_session = async_sessionmaker(
+        engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with async_session() as session:
         yield session
 
 
-SessionDep = Annotated[Session, Depends(get_session)]
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 async def get_current_user(
@@ -38,7 +41,7 @@ async def get_current_user(
     except jwt.InvalidTokenError:
         raise credentials_exception
 
-    user = session.get(User, int(user_id))
+    user = await session.get(User, int(user_id))
     if user is None:
         raise credentials_exception
 

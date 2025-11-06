@@ -1,6 +1,8 @@
+import asyncio
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status
-from sqlmodel import select, Session
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentCustomer
 from backend.models import Comment, Store, CommentState, UserType, User
@@ -17,17 +19,19 @@ from backend.schemas import (
 router = APIRouter(prefix="/comment", tags=["评论管理"])
 
 
-def populate_comment_response(comment: Comment, session: Session) -> CommentResponse:
+async def populate_comment_response(
+    comment: Comment, session: AsyncSession
+) -> CommentResponse:
     """填充评论响应数据，包括用户名和商家名"""
     comment_response = CommentResponse.model_validate(comment)
 
     # 查询用户名
-    user = session.get(User, comment.user_id)
+    user = await session.get(User, comment.user_id)
     if user:
         comment_response.user_name = user.username
 
     # 查询商家名
-    store = session.get(Store, comment.store_id)
+    store = await session.get(Store, comment.store_id)
     if store:
         comment_response.store_name = store.name
 
@@ -42,7 +46,7 @@ async def create_comment(
 ):
     """普通用户发表评论（需要审核）"""
     # 验证商家是否存在
-    store = session.get(Store, comment_create.store_id)
+    store = await session.get(Store, comment_create.store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -60,9 +64,9 @@ async def create_comment(
         state=CommentState.PENDING,
     )
     session.add(db_comment)
-    session.commit()
-    session.refresh(db_comment)
-    return populate_comment_response(db_comment, session)
+    await session.commit()
+    await session.refresh(db_comment)
+    return await populate_comment_response(db_comment, session)
 
 
 @router.get("/", response_model=PageResponse[CommentResponse])
@@ -126,14 +130,16 @@ async def list_comments(
         count_statement = count_statement.where(Comment.content.like(f"%{content}%"))  # type: ignore
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = list(session.exec(statement).all())
+    comments = list((await session.execute(statement)).scalars().all())
 
     # 填充评论响应数据
-    result = [populate_comment_response(comment, session) for comment in comments]
+    result = await asyncio.gather(
+        *[populate_comment_response(comment, session) for comment in comments]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -152,7 +158,7 @@ async def list_store_comments(
     from sqlalchemy import func
 
     # 验证商家是否存在
-    store = session.get(Store, store_id)
+    store = await session.get(Store, store_id)
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
@@ -166,19 +172,19 @@ async def list_store_comments(
     )
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = list(session.exec(statement).all())
+    comments = list((await session.execute(statement)).scalars().all())
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
     # 填充用户名和商家名
-    comments_with_names = [
-        populate_comment_response(comment, session) for comment in comments
-    ]
+    comments_with_names = await asyncio.gather(
+        *[populate_comment_response(comment, session) for comment in comments]
+    )
 
     return PageResponse(
         records=comments_with_names, total=total, current=current, size=limit
@@ -203,19 +209,19 @@ async def get_my_comments(
     )
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = list(session.exec(statement).all())
+    comments = list((await session.execute(statement)).scalars().all())
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
 
     # 填充用户名和商家名
-    comments_with_names = [
-        populate_comment_response(comment, session) for comment in comments
-    ]
+    comments_with_names = await asyncio.gather(
+        *[populate_comment_response(comment, session) for comment in comments]
+    )
 
     return PageResponse(
         records=comments_with_names, total=total, current=current, size=limit
@@ -225,10 +231,10 @@ async def get_my_comments(
 @router.get("/{comment_id}", response_model=CommentResponse)
 async def get_comment(comment_id: int, session: SessionDep):
     """查询指定评论信息"""
-    comment = session.get(Comment, comment_id)
+    comment = await session.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在")
-    return populate_comment_response(comment, session)
+    return await populate_comment_response(comment, session)
 
 
 @router.put("/{comment_id}", response_model=CommentResponse)
@@ -239,7 +245,7 @@ async def update_comment(
     session: SessionDep,
 ):
     """更新评论内容（仅评论作者本人）"""
-    comment = session.get(Comment, comment_id)
+    comment = await session.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在")
 
@@ -256,9 +262,9 @@ async def update_comment(
     comment.review_time = None
 
     session.add(comment)
-    session.commit()
-    session.refresh(comment)
-    return populate_comment_response(comment, session)
+    await session.commit()
+    await session.refresh(comment)
+    return await populate_comment_response(comment, session)
 
 
 @router.delete("/{comment_id}")
@@ -266,7 +272,7 @@ async def delete_comment(
     comment_id: int, current_user: CurrentUser, session: SessionDep
 ):
     """删除评论（评论作者或管理员）"""
-    comment = session.get(Comment, comment_id)
+    comment = await session.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在")
 
@@ -276,8 +282,8 @@ async def delete_comment(
             status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限删除该评论"
         )
 
-    session.delete(comment)
-    session.commit()
+    await session.delete(comment)
+    await session.commit()
     return {"message": "评论已删除"}
 
 
@@ -292,7 +298,7 @@ async def batch_delete_comments(
 
     for comment_id in batch_request.ids:
         try:
-            comment = session.get(Comment, comment_id)
+            comment = await session.get(Comment, comment_id)
             if not comment:
                 failed_count += 1
                 failed_ids.append(comment_id)
@@ -307,17 +313,17 @@ async def batch_delete_comments(
                 failed_ids.append(comment_id)
                 continue
 
-            session.delete(comment)
+            await session.delete(comment)
             success_count += 1
         except Exception:
             failed_count += 1
             failed_ids.append(comment_id)
             # 如果发生错误，回滚当前事务
-            session.rollback()
+            await session.rollback()
 
     # 提交所有成功的删除操作
     if success_count > 0:
-        session.commit()
+        await session.commit()
 
     return BatchDeleteResponse(
         success_count=success_count,
@@ -372,14 +378,16 @@ async def list_pending_comments(
         count_statement = count_statement.where(Comment.content.like(f"%{content}%"))  # type: ignore
 
     # 获取总数
-    total = session.exec(count_statement).one()
+    total = (await session.execute(count_statement)).scalar_one()
 
     # 分页查询
     statement = statement.offset(skip).limit(limit)
-    comments = list(session.exec(statement).all())
+    comments = list((await session.execute(statement)).scalars().all())
 
     # 填充评论响应数据
-    result = [populate_comment_response(comment, session) for comment in comments]
+    result = await asyncio.gather(
+        *[populate_comment_response(comment, session) for comment in comments]
+    )
 
     # 计算当前页码
     current = (skip // limit) + 1 if limit > 0 else 1
@@ -395,7 +403,7 @@ async def review_comment(
     session: SessionDep,
 ):
     """管理员审核评论"""
-    comment = session.get(Comment, comment_id)
+    comment = await session.get(Comment, comment_id)
     if not comment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="评论不存在")
 
@@ -404,9 +412,9 @@ async def review_comment(
     comment.review_time = datetime.utcnow()
 
     session.add(comment)
-    session.commit()
-    session.refresh(comment)
+    await session.commit()
+    await session.refresh(comment)
 
     # TODO: 发送审核结果通知给用户
 
-    return populate_comment_response(comment, session)
+    return await populate_comment_response(comment, session)
