@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
-import type { FormInstance } from 'element-plus';
 import { addItem, updateItem } from '@/service/api';
-import { useFormRules } from '@/hooks/common/form';
+import { useForm, useFormRules } from '@/hooks/common/form';
 
 defineOptions({
   name: 'ItemOperateDrawer'
@@ -42,7 +41,7 @@ function createDefaultModel(): Model {
   };
 }
 
-const { formRef, validate, restoreValidation } = useFormRules();
+const { formRef, validate, restoreValidation } = useForm();
 const { defaultRequiredRule } = useFormRules();
 
 const rules = computed(() => {

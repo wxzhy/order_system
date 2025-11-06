@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue';
 import { getComment, updateComment } from '@/service/api';
-import { useFormRules } from '@/hooks/common/form';
+import { useForm, useFormRules } from '@/hooks/common/form';
 
 defineOptions({
   name: 'CommentOperateDrawer'
@@ -40,7 +40,7 @@ function createDefaultModel(): Model {
   };
 }
 
-const { formRef, validate, restoreValidation } = useFormRules();
+const { formRef, validate, restoreValidation } = useForm();
 const { defaultRequiredRule } = useFormRules();
 
 const stateOptions = [

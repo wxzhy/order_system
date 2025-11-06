@@ -1,10 +1,23 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { onLoad } from "@dcloudio/uni-app"
-import { getOrderDetail, type IOrder } from "@/api/order"
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { getOrderDetail } from '@/api/order'
 
 const order = ref<Awaited<ReturnType<typeof getOrderDetail>> | null>(null)
 const loading = ref(false)
+
+const statusMap: Record<string, { text: string; type: 'warning' | 'success' | 'error' | 'info' }> = {
+  pending: { text: '待审核', type: 'warning' },
+  approved: { text: '已通过', type: 'success' },
+  completed: { text: '已完成', type: 'success' },
+  cancelled: { text: '已取消', type: 'error' },
+}
+
+function getStatusConfig(state?: string) {
+  if (!state)
+    return { text: '未知状态', type: 'info' as const }
+  return statusMap[state] ?? { text: state, type: 'info' as const }
+}
 
 onLoad(async (options) => {
   if (!options?.id) {
@@ -41,7 +54,14 @@ onLoad(async (options) => {
     <view v-else-if="order" class="content">
       <view class="section">
         <view class="section-title">订单状态</view>
-        <view class="status">{{ order.state }}</view>
+        <view class="status">
+          <u-tag
+            :text="getStatusConfig(order.state).text"
+            :type="getStatusConfig(order.state).type"
+            plain
+            shape="circle"
+          />
+        </view>
         <view class="detail-row">订单编号：{{ order.id }}</view>
         <view class="detail-row">下单时间：{{ order.create_time }}</view>
       </view>
@@ -103,9 +123,8 @@ onLoad(async (options) => {
 }
 
 .status {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
   margin-bottom: 12rpx;
 }
 
