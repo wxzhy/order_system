@@ -1,12 +1,9 @@
 <script setup lang="tsx">
 import { computed, reactive, ref, watch } from 'vue';
 import { ElButton, ElCard, ElResult, ElSkeleton, ElTable, ElTableColumn } from 'element-plus';
-import { useRoute } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { fetchGetOrderList, updateOrder } from '@/service/api';
 import { useUIPaginatedTable } from '@/hooks/common/table';
-import { useTabStore } from '@/store/modules/tab';
-import { useRouterPush } from '@/hooks/common/router';
-import type { RouteKey } from '@elegant-router/types';
 import { useVendorStoreStatus } from '@/hooks/business/vendor-store';
 import { $t } from '@/locales';
 import OrderApprovalSearch from './modules/order-approval-search.vue';
@@ -26,12 +23,10 @@ function getInitSearchParams() {
   };
 }
 
-const { store, state, exists, canManage, loading: statusLoading, errorMessage, forbidden, loadStatus } = useVendorStoreStatus();
-const tabStore = useTabStore();
-const { routerPushByKey } = useRouterPush();
-const route = useRoute();
-const handledForbidden = ref(false);
+const { store, state, exists, canManage, loading: statusLoading, errorMessage, loadStatus } = useVendorStoreStatus();
 const storeId = computed(() => store.value?.id ?? null);
+const router = useRouter();
+const redirectHandled = ref(false);
 
 function createEmptyList(): Api.SystemManage.OrderList {
   return {
@@ -117,22 +112,6 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
 });
 
 watch(
-  () => forbidden.value,
-  async val => {
-    if (val && !handledForbidden.value) {
-      handledForbidden.value = true;
-      const message = errorMessage.value || '当前账号无权使用商家中心，将返回首页';
-      window.$message?.error(message);
-      const currentRouteName = route.name as RouteKey | undefined;
-      await routerPushByKey('root');
-      if (currentRouteName && currentRouteName !== 'root') {
-        await tabStore.removeTabByRouteName(currentRouteName);
-      }
-    }
-  }
-);
-
-watch(
   () => (canManage.value && storeId.value ? storeId.value : null),
   value => {
     if (value) {
@@ -174,52 +153,71 @@ const blockMessage = computed(() => {
       return errorMessage.value || '暂时无法加载商家信息，请稍后再试。';
   }
 });
+
+watch(
+  () => ({ loading: statusLoading.value, manageable: canManage.value }),
+  ({ loading, manageable }) => {
+    if (loading || manageable || redirectHandled.value) {
+      return;
+    }
+
+    redirectHandled.value = true;
+    const message = blockMessage.value || '当前账号无权使用商家功能，请先完成商家注册';
+    window.$message?.error(message);
+    router.replace('/vendor/register');
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
-    <OrderApprovalSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
-
     <ElSkeleton v-if="statusLoading" animated :rows="6" />
 
-    <ElResult
-      v-else-if="!canManage"
-      icon="info"
-      title="暂无法审批订单"
-      :sub-title="blockMessage"
-    >
-      <template #extra>
-        <RouterLink to="/vendor/register">
-          <ElButton type="primary">前往商家注册</ElButton>
-        </RouterLink>
-        <ElButton class="ml-12px" @click="loadStatus">刷新状态</ElButton>
-      </template>
-    </ElResult>
+    <template v-else>
+      <ElResult
+        v-if="!canManage"
+        icon="info"
+        title="暂无法审批订单"
+        :sub-title="blockMessage"
+      >
+        <template #extra>
+          <RouterLink to="/vendor/register">
+            <ElButton type="primary">前往商家注册</ElButton>
+          </RouterLink>
+          <ElButton class="ml-12px" @click="loadStatus">刷新状态</ElButton>
+        </template>
+      </ElResult>
 
-    <ElCard v-else class="card-wrapper sm:flex-1-hidden" body-class="ht50">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <p>待审批订单</p>
-          <TableHeaderOperation v-model:columns="columnChecks" :loading="loading" @refresh="getData">
-            <template #default><span></span></template>
-          </TableHeaderOperation>
-        </div>
+      <template v-else>
+        <OrderApprovalSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
+
+        <ElCard class="card-wrapper sm:flex-1-hidden" body-class="ht50">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <p>待审批订单</p>
+              <TableHeaderOperation v-model:columns="columnChecks" :loading="loading" @refresh="getData">
+                <template #default><span></span></template>
+              </TableHeaderOperation>
+            </div>
+          </template>
+          <div class="h-[calc(100%-50px)]">
+            <ElTable v-loading="loading" height="100%" border class="sm:h-full" :data="data" row-key="id">
+              <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+            </ElTable>
+          </div>
+          <div class="mt-20px flex justify-end">
+            <ElPagination
+              v-if="mobilePagination.total"
+              layout="total,prev,pager,next,sizes"
+              v-bind="mobilePagination"
+              @current-change="mobilePagination['current-change']"
+              @size-change="mobilePagination['size-change']"
+            />
+          </div>
+        </ElCard>
       </template>
-      <div class="h-[calc(100%-50px)]">
-        <ElTable v-loading="loading" height="100%" border class="sm:h-full" :data="data" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-      <div class="mt-20px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total,prev,pager,next,sizes"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
+    </template>
   </div>
 </template>
 
@@ -230,3 +228,5 @@ const blockMessage = computed(() => {
   }
 }
 </style>
+
+

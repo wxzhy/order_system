@@ -85,7 +85,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
                             </ElButton>
                         </>
                     )}
-                    <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
+                    <ElButton type="primary" plain size="small" onClick={() => handleEdit(row)}>
                         {$t('common.edit')}
                     </ElButton>
                     <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>

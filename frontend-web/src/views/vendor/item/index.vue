@@ -1,13 +1,10 @@
 <script setup lang="tsx">
 import { computed, reactive, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import type { RouteKey } from '@elegant-router/types';
+import { useRouter } from 'vue-router';
 import { ElButton, ElImage, ElPopconfirm, ElResult, ElSkeleton, ElTag } from 'element-plus';
 import { batchDeleteItem, deleteItem, fetchGetItemList } from '@/service/api';
 import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { useVendorStoreStatus } from '@/hooks/business/vendor-store';
-import { useTabStore } from '@/store/modules/tab';
-import { useRouterPush } from '@/hooks/common/router';
 import { $t } from '@/locales';
 import ItemOperateDrawer from './modules/item-operate-drawer.vue';
 import ItemSearch from './modules/item-search.vue';
@@ -29,12 +26,10 @@ function getInitSearchParams(): Api.SystemManage.ItemSearchParams {
   };
 }
 
-const { store, state, exists, canManage, loading: statusLoading, errorMessage, forbidden, loadStatus } = useVendorStoreStatus();
-const tabStore = useTabStore();
-const { routerPushByKey } = useRouterPush();
-const route = useRoute();
-const handledForbidden = ref(false);
+const { store, state, exists, canManage, loading: statusLoading, errorMessage, loadStatus } = useVendorStoreStatus();
 const storeId = computed(() => store.value?.id ?? null);
+const router = useRouter();
+const redirectHandled = ref(false);
 
 function createEmptyList(): Api.SystemManage.ItemList {
   return {
@@ -58,6 +53,7 @@ const {
     currentPage: 1,
     pageSize: 30
   },
+  columns: () => [],
   api: async () => {
     if (!storeId.value || !canManage.value) {
       return createEmptyList();
@@ -148,7 +144,7 @@ columns.value = [
     align: 'center',
     formatter: (row: Api.SystemManage.Item) => (
       <div class="flex-center gap-8px">
-        <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
+        <ElButton type="primary" plain size="small" onClick={() => handleEdit(row)}>
           {$t('common.edit')}
         </ElButton>
         <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
@@ -167,21 +163,6 @@ columns.value = [
 
 const checkedRowKeys = ref<number[]>([]);
 
-watch(
-  () => forbidden.value,
-  async val => {
-    if (val && !handledForbidden.value) {
-      handledForbidden.value = true;
-      const message = errorMessage.value || '当前账号无权使用商家中心，将返回首页';
-      window.$message?.error(message);
-      const currentRouteName = route.name as RouteKey | undefined;
-      await routerPushByKey('root');
-      if (currentRouteName && currentRouteName !== 'root') {
-        await tabStore.removeTabByRouteName(currentRouteName);
-      }
-    }
-  }
-);
 
 watch(
   () => (canManage.value && storeId.value ? storeId.value : null),
@@ -244,79 +225,94 @@ const blockMessage = computed(() => {
       return errorMessage.value || '暂时无法加载商家信息，请稍后再试。';
   }
 });
+
+watch(
+  () => ({ loading: statusLoading.value, manageable: canManage.value }),
+  ({ loading, manageable }) => {
+    if (loading || manageable || redirectHandled.value) {
+      return;
+    }
+
+    redirectHandled.value = true;
+    const message = blockMessage.value || '当前账号无权使用商家功能，请先完成商家注册';
+    window.$message?.error(message);
+    router.replace('/vendor/register');
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <div class="h-full flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
-    <ItemSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
-
     <ElSkeleton v-if="statusLoading" animated :rows="6" />
 
-    <ElResult
-      v-else-if="!canManage"
-      icon="info"
-      title="暂无法管理餐点"
-      :sub-title="blockMessage"
-    >
-      <template #extra>
-        <RouterLink to="/vendor/register">
-          <ElButton type="primary">前往商家注册</ElButton>
-        </RouterLink>
-        <ElButton class="ml-12px" @click="loadStatus">刷新状态</ElButton>
-      </template>
-    </ElResult>
-
-    <ElCard
-      v-else
-      class="card-wrapper sm:flex-1-hidden"
-      :body-style="{ flex: 1, overflow: 'hidden' }"
-    >
-      <template #header>
-        <div class="flex items-center justify-between">
-          <p class="m-0 text-16px font-600">餐点列表</p>
-          <TableHeaderOperation
-            v-model:columns="columnChecks"
-            :disabled-delete="checkedRowKeys.length === 0"
-            :loading="loading"
-            @add="handleAdd"
-            @delete="handleBatchDelete"
-            @refresh="getData"
-          />
-        </div>
-      </template>
-      <ElTable
-        v-loading="loading"
-        :data="data"
-        border
-        stripe
-        height="100%"
-        @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))"
+    <template v-else>
+      <ElResult
+        v-if="!canManage"
+        icon="info"
+        title="当前无法管理餐点"
+        :sub-title="blockMessage"
       >
-        <template v-for="column in columns" :key="column.prop">
-          <ElTableColumn v-if="!column.hidden" v-bind="column" />
+        <template #extra>
+          <RouterLink to="/vendor/register">
+            <ElButton type="primary">前往商家注册</ElButton>
+          </RouterLink>
+          <ElButton class="ml-12px" @click="loadStatus">刷新状态</ElButton>
         </template>
-      </ElTable>
-      <template #footer>
-        <ElPagination
-          v-model:current-page="mobilePagination.currentPage"
-          v-model:page-size="mobilePagination.pageSize"
-          :total="mobilePagination.total"
-          :page-sizes="[30, 50, 100]"
-          :background="true"
-          layout="total, prev, pager, next, sizes"
-          @current-change="getDataByPage"
-          @size-change="getDataByPage"
+      </ElResult>
+
+      <template v-else>
+        <ItemSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
+
+        <ElCard class="card-wrapper sm:flex-1-hidden" :body-style="{ flex: 1, overflow: 'hidden' }">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <p class="m-0 text-16px font-600">餐点列表</p>
+              <TableHeaderOperation
+                v-model:columns="columnChecks"
+                :disabled-delete="checkedRowKeys.length === 0"
+                :loading="loading"
+                @add="handleAdd"
+                @delete="handleBatchDelete"
+                @refresh="getData"
+              />
+            </div>
+          </template>
+          <ElTable
+            v-loading="loading"
+            :data="data"
+            border
+            stripe
+            height="100%"
+            @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))"
+          >
+            <template v-for="column in columns" :key="column.prop">
+              <ElTableColumn v-if="!column.hidden" v-bind="column" />
+            </template>
+          </ElTable>
+          <template #footer>
+            <ElPagination
+              v-model:current-page="mobilePagination.currentPage"
+              v-model:page-size="mobilePagination.pageSize"
+              :total="mobilePagination.total"
+              :page-sizes="[30, 50, 100]"
+              :background="true"
+              layout="total, prev, pager, next, sizes"
+              @current-change="getDataByPage"
+              @size-change="getDataByPage"
+            />
+          </template>
+        </ElCard>
+
+        <ItemOperateDrawer
+          v-model:visible="drawerVisible"
+          :operate-type="operateType"
+          :row-data="editingData"
+          :store-id="storeId ?? undefined"
+          @submitted="getDataByPage"
         />
       </template>
-    </ElCard>
-
-    <ItemOperateDrawer
-      v-model:visible="drawerVisible"
-      :operate-type="operateType"
-      :row-data="editingData"
-      :store-id="storeId ?? undefined"
-      @submitted="getDataByPage"
-    />
+    </template>
   </div>
 </template>
 
@@ -326,3 +322,6 @@ const blockMessage = computed(() => {
   flex-direction: column;
 }
 </style>
+
+
+

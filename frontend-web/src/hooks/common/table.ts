@@ -191,10 +191,27 @@ export function useTableOperate<TableData>(
   /** the editing row data */
   const editingData = shallowRef<TableData | null>(null);
 
-  function handleEdit(id: TableData[keyof TableData]) {
+  function handleEdit(target: TableData | TableData[keyof TableData]) {
     operateType.value = 'edit';
-    const findItem = data.value.find(item => item[idKey] === id) || null;
-    editingData.value = jsonClone(findItem);
+
+    let record: TableData | null = null;
+
+    if (typeof target === 'object' && target !== null) {
+      record = target as TableData;
+    } else {
+      const keyValue = target as TableData[keyof TableData];
+      record =
+        data.value.find(item => {
+          const value = item[idKey];
+          return value === keyValue || String(value) === String(keyValue);
+        }) || null;
+    }
+
+    editingData.value = record ? jsonClone(record) : null;
+
+    if (!record) {
+      return;
+    }
 
     openDrawer();
   }
