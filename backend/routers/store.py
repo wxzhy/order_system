@@ -157,7 +157,7 @@ async def get_my_store(current_vendor: CurrentVendor, session: SessionDep):
 
 @router.get("/my/status", response_model=VendorStoreStatus)
 async def get_my_store_status(current_vendor: CurrentVendor, session: SessionDep):
-    """�̼Ҳ�ȡ�Լ��̼���Ϣ״̬"""
+    """商家查询自己的商家信息状态"""
     statement = select(Store).where(Store.owner_id == current_vendor.id)
     store = (await session.execute(statement)).scalars().first()
 
@@ -178,13 +178,11 @@ async def get_my_store_status(current_vendor: CurrentVendor, session: SessionDep
 async def update_my_store(
     store_update: StoreUpdate, current_vendor: CurrentVendor, session: SessionDep
 ):
-    """�̸̼��Լ���̼���Ϣ�������й�ˡ"""
+    """商家更新自己的商家信息"""
     statement = select(Store).where(Store.owner_id == current_vendor.id)
     store = (await session.execute(statement)).scalars().first()
     if not store:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="����δ�����̼���Ϣ"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
     update_data = store_update.model_dump(exclude_unset=True, by_alias=True)
     for key, value in update_data.items():
