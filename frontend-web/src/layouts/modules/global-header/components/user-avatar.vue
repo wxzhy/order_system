@@ -71,20 +71,15 @@ function handleDropdown(key: DropdownKey) {
   <ElDropdown class="px-14px" trigger="click" @command="handleDropdown">
     <template #dropdown>
       <ElDropdownMenu>
-        <ElDropdownItem
-          v-for="{ key, label, icon } in options"
-          :key="key"
-          class="mx-4px my-1px rounded-6px"
-          :icon="icon"
-          :command="key"
-        >
+        <ElDropdownItem v-for="{ key, label, icon } in options" :key="key" class="mx-4px my-1px rounded-6px"
+          :icon="icon" :command="key">
           {{ label }}
         </ElDropdownItem>
       </ElDropdownMenu>
     </template>
     <div class="flex items-center">
       <SvgIcon icon="ph:user-circle" class="mr-5px text-icon-large" />
-      <span class="text-16px font-medium">{{ authStore.userInfo.userName }}</span>
+      <span class="text-16px font-medium">{{ authStore.userInfo.username }}</span>
     </div>
   </ElDropdown>
 </template>

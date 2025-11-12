@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, watchEffect } from 'vue';
 import { ElButton, ElCard, ElResult, ElSkeleton, ElTable, ElTableColumn } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { fetchGetOrderList, updateOrder } from '@/service/api';
@@ -154,20 +154,25 @@ const blockMessage = computed(() => {
   }
 });
 
-watch(
-  () => ({ loading: statusLoading.value, manageable: canManage.value }),
-  ({ loading, manageable }) => {
-    if (loading || manageable || redirectHandled.value) {
-      return;
-    }
+watchEffect(() => {
+  if (statusLoading.value || canManage.value || redirectHandled.value) {
+    return;
+  }
 
-    redirectHandled.value = true;
-    const message = blockMessage.value || '当前账号无权使用商家功能，请先完成商家注册';
-    window.$message?.error(message);
-    router.replace('/vendor/register');
-  },
-  { immediate: true }
-);
+  redirectHandled.value = true;
+  const message = blockMessage.value || '当前账号无权使用商家功能，请前往商家注册';
+  window.$message?.error(message);
+
+  const redirectQuery =
+    router.currentRoute.value.fullPath && router.currentRoute.value.fullPath !== '/vendor/register'
+      ? { redirect: router.currentRoute.value.fullPath }
+      : undefined;
+
+  router.replace({
+    name: 'vendor_register',
+    query: redirectQuery
+  });
+});
 </script>
 
 <template>

@@ -62,6 +62,19 @@ const statusTagType = computed<'success' | 'warning' | 'danger' | 'info'>(() => 
   }
 });
 
+const statusAlertType = computed<'success' | 'warning' | 'error' | 'info'>(() => {
+  switch (state.value) {
+    case 'approved':
+      return 'success';
+    case 'pending':
+      return 'warning';
+    case 'rejected':
+      return 'error';
+    default:
+      return 'info';
+  }
+});
+
 const statusText = computed(() => {
   switch (state.value) {
     case 'approved':
@@ -78,9 +91,9 @@ const statusText = computed(() => {
 const statusDescription = computed(() => {
   switch (state.value) {
     case 'approved':
-      return '商家信息已审核通过，可以开始管理餐点和订单。';
+      return '商家信息已审核通过，可以开始管理餐点和订单。您可以随时修改商家信息，修改后无需重新审核。';
     case 'pending':
-      return '商家信息正在审核中，请耐心等待。如需修改请更新表单后再次提交，审核状态将重新进入待审核。';
+      return '商家信息正在审核中，请耐心等待。审核通过前可以修改信息并重新提交。';
     case 'rejected':
       return '商家信息审核未通过，请根据反馈修改信息后重新提交。';
     default:
@@ -159,7 +172,7 @@ async function handleSubmit() {
 
     if (exists.value) {
       await updateMyStore(payload);
-      ElMessage.success('商家信息已提交，待审核。');
+      ElMessage.success('商家信息已更新，修改立即生效。');
     } else {
       await addStore(payload);
       ElMessage.success('商家信息提交成功，请等待审核。');
@@ -193,7 +206,7 @@ function handleBack() {
       <template v-else>
         <ElAlert v-if="errorMessage" type="error" :title="errorMessage" show-icon :closable="false" />
         <template v-else>
-          <ElAlert :title="statusDescription" :type="statusTagType" show-icon :closable="false" />
+          <ElAlert :title="statusDescription" :type="statusAlertType" show-icon :closable="false" />
 
           <ElDescriptions v-if="showStoreSummary" class="mt-16px" :column="1" border>
             <ElDescriptionsItem label="商家名称">{{ store?.storeName }}</ElDescriptionsItem>
@@ -221,14 +234,8 @@ function handleBack() {
         </ElFormItem>
 
         <ElFormItem label="商家简介" prop="description">
-          <ElInput
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入商家简介（可选）"
-            maxlength="200"
-            show-word-limit
-          />
+          <ElInput v-model="formData.description" type="textarea" :rows="3" placeholder="请输入商家简介（可选）" maxlength="200"
+            show-word-limit />
         </ElFormItem>
 
         <ElFormItem label="商家地址" prop="address">

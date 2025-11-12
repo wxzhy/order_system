@@ -2,7 +2,9 @@ import { computed, reactive, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { defineStore } from 'pinia';
 import { useLoading } from '@sa/hooks';
-import { fetchGetUserInfo, fetchLogin, fetchEmailCodeLogin } from '@/service/api';
+import { fetchEmailCodeLogin, fetchGetUserInfo, fetchLogin, fetchVendorStoreStatus } from '@/service/api';
+import type { VendorStoreStatus } from '@/service/api/store';
+import { alova } from '@/service/request';
 import { useRouterPush } from '@/hooks/common/router';
 import { localStg } from '@/utils/storage';
 import { SetupStoreId } from '@/enum';
@@ -29,6 +31,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     user_type: 'customer',
     create_time: ''
   });
+  const vendorStoreStatus = ref<VendorStoreStatus | null>(null);
 
   /** is super role in static route */
   const isStaticSuper = computed(() => {
@@ -40,20 +43,42 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   /** Is login */
   const isLogin = computed(() => Boolean(token.value));
 
+  function clearAlovaCache() {
+    try {
+      alova.l1Cache?.clear?.();
+    } catch (error) {
+      /* noop */
+    }
+    try {
+      alova.l2Cache?.clear?.();
+    } catch (error) {
+      /* noop */
+    }
+  }
+
   /** Reset auth store */
   async function resetStore() {
     recordUserId();
 
+    // Clear auth credentials and alova caches to avoid stale validation errors
     clearAuthStorage();
+    clearAlovaCache();
+    vendorStoreStatus.value = null;
 
+    // 清除路由状态
+    routeStore.resetStore();
+
+    // 清除标签页缓存和状态
+    await tabStore.clearTabs();
+    localStg.remove('globalTabs');
+
+    // 重置 auth store 状态
     authStore.$reset();
 
+    // 跳转到登录页
     if (!route.meta.constant) {
       await toLogin();
     }
-
-    tabStore.cacheTabs();
-    routeStore.resetStore();
   }
 
   /** Record the user ID of the previous login session Used to compare with the current user ID on next login */
@@ -79,6 +104,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     const lastLoginUserId = localStg.get('lastLoginUserId');
 
     if (lastLoginUserId !== String(userInfo.id)) {
+      // When switching accounts only clear tab cache to keep other local data intact
       localStg.remove('globalTabs');
       tabStore.clearTabs();
 
@@ -157,11 +183,26 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     localStg.set('token', loginToken.access_token);
     localStg.set('refreshToken', loginToken.refresh_token);
 
-    // 2. get user info
+    // 2. 清除用户信息的 API 缓存，确保获取最新的用户数据
+    // 使用 l2Cache.remove 来清除特定 API 的缓存，而不是清除整个 localStorage
+    const getUserInfoMethod = fetchGetUserInfo();
+    try {
+      // 使用 method 的 key 来移除缓存
+      alova.l2Cache?.remove(getUserInfoMethod.key);
+    } catch (error) {
+      // 如果移除失败，忽略错误继续执行
+    }
+
+    // 3. get user info
     const pass = await getUserInfo();
 
     if (pass) {
       token.value = loginToken.access_token;
+      if (userInfo.user_type === 'vendor') {
+        await refreshVendorStoreStatus(true);
+      } else {
+        vendorStoreStatus.value = null;
+      }
 
       return true;
     }
@@ -190,9 +231,33 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
       if (!pass) {
         resetStore();
+      } else if (userInfo.user_type === 'vendor') {
+        await refreshVendorStoreStatus(true);
+      } else {
+        vendorStoreStatus.value = null;
       }
     }
   }
+
+  async function refreshVendorStoreStatus(force = false) {
+    if (userInfo.user_type !== 'vendor') {
+      vendorStoreStatus.value = null;
+      return;
+    }
+
+    if (!force && vendorStoreStatus.value) {
+      return;
+    }
+
+    try {
+      vendorStoreStatus.value = await fetchVendorStoreStatus();
+    } catch {
+      vendorStoreStatus.value = null;
+    }
+  }
+
+  const hasVendorStore = computed(() => Boolean(vendorStoreStatus.value?.exists));
+  const canManageVendorStore = computed(() => Boolean(vendorStoreStatus.value?.can_manage));
 
   return {
     token,
@@ -203,6 +268,10 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     resetStore,
     login,
     loginWithEmailCode,
-    initUserInfo
+    initUserInfo,
+    refreshVendorStoreStatus,
+    vendorStoreStatus,
+    hasVendorStore,
+    canManageVendorStore
   };
 });

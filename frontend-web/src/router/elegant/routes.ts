@@ -105,7 +105,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'approval',
       i18nKey: 'route.approval',
       icon: 'mdi:clipboard-check-outline',
-      order: 2
+      order: 2,
+      roles: ['admin']
     },
     children: [
       {
@@ -116,7 +117,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'approval_comment',
           i18nKey: 'route.approval_comment',
           icon: 'mdi:comment-check-outline',
-          order: 3
+          order: 3,
+          roles: ['admin']
         }
       },
       {
@@ -127,7 +129,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'approval_order',
           i18nKey: 'route.approval_order',
           icon: 'mdi:receipt-text-check-outline',
-          order: 2
+          order: 2,
+          roles: ['admin']
         }
       },
       {
@@ -138,7 +141,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'approval_store',
           i18nKey: 'route.approval_store',
           icon: 'mdi:store-check-outline',
-          order: 1
+          order: 1,
+          roles: ['admin']
         }
       }
     ]
@@ -743,7 +747,8 @@ export const generatedRoutes: GeneratedRoute[] = [
       title: 'vendor',
       i18nKey: 'route.vendor',
       icon: 'mdi:storefront-outline',
-      order: 3
+      order: 3,
+      roles: ['vendor']
     },
     children: [
       {
@@ -754,7 +759,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'vendor_item',
           i18nKey: 'route.vendor_item',
           icon: 'mdi:food',
-          order: 2
+          order: 2,
+          roles: ['vendor']
         }
       },
       {
@@ -765,7 +771,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'vendor_order',
           i18nKey: 'route.vendor_order',
           icon: 'mdi:receipt-text-outline',
-          order: 3
+          order: 3,
+          roles: ['vendor']
         }
       },
       {
@@ -776,7 +783,8 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'vendor_register',
           i18nKey: 'route.vendor_register',
           icon: 'mdi:store-plus-outline',
-          order: 1
+          order: 1,
+          roles: ['vendor']
         }
       }
     ]

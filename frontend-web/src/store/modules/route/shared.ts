@@ -28,20 +28,28 @@ function filterAuthRouteByRoles(route: ElegantConstRoute, roles: string[]): Eleg
   // if the user's role is included in the route's "roles", then it is allowed to access
   const hasPermission = routeRoles.some(role => roles.includes(role));
 
+  // 如果路由本身没有权限，直接返回空（不管有没有子路由）
+  if (!hasPermission && !isEmptyRoles) {
+    return [];
+  }
+
   const filterRoute = { ...route };
 
+  // 过滤子路由
   if (filterRoute.children?.length) {
     filterRoute.children = filterRoute.children.flatMap(item => filterAuthRouteByRoles(item, roles));
   }
 
-  // Exclude the route if it has no children after filtering
-  if (filterRoute.children?.length === 0) {
+  // 如果原本有子路由，但过滤后没有了，也不显示父路由
+  const hadChildrenOriginally = route.children && route.children.length > 0;
+  const hasChildrenAfterFilter = filterRoute.children && filterRoute.children.length > 0;
+
+  if (hadChildrenOriginally && !hasChildrenAfterFilter) {
     return [];
   }
 
-  return hasPermission || isEmptyRoles ? [filterRoute] : [];
+  return [filterRoute];
 }
-
 /**
  * sort route by order
  *

@@ -41,11 +41,15 @@ export function addStore(data: StoreModel) {
 }
 
 export function fetchMyStore() {
-    return alova.Get<Api.SystemManage.Store>('/store/my');
+    return alova.Get<Api.SystemManage.Store>('/store/my', {
+        cacheFor: 0 // always fetch latest store profile
+    });
 }
 
 export function fetchVendorStoreStatus() {
-    return alova.Get<VendorStoreStatus>('/store/my/status');
+    return alova.Get<VendorStoreStatus>('/store/my/status', {
+        cacheFor: 0 // vendor status must be realtime to reflect approvals
+    });
 }
 
 export function updateMyStore(data: StoreModel) {

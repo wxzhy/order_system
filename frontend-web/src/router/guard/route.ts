@@ -70,7 +70,7 @@ export function createRouteGuard(router: Router) {
     }
 
     // check vendor registration
-    const vendorLocation = checkVendorRegistration(to, authStore, rootRoute);
+    const vendorLocation = await checkVendorRegistration(to, authStore, rootRoute);
     if (vendorLocation) {
       next(vendorLocation);
       return;
@@ -182,27 +182,40 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
  * @param authStore auth store instance
  * @param rootRoute root route key
  */
-function checkVendorRegistration(
+async function checkVendorRegistration(
   to: RouteLocationNormalized,
   authStore: ReturnType<typeof useAuthStore>,
   rootRoute: RouteKey
-): RouteLocationRaw | null {
+): Promise<RouteLocationRaw | null> {
   const vendorRegisterRoute: RouteKey = 'vendor_register';
   const userType = authStore.userInfo.user_type;
   const isVendorUser = userType === 'vendor';
-  const hasStoreInfo = authStore.userInfo.store_id !== null && authStore.userInfo.store_id !== undefined;
   const isVendorRegisterPage = to.name === vendorRegisterRoute;
   const isVendorRoute = String(to.path).startsWith('/vendor');
 
-  // 如果是商家用户,没有注册商家信息,且不是在注册页面,则跳转到注册页面
-  if (isVendorUser && !hasStoreInfo && !isVendorRegisterPage && isVendorRoute) {
-    return { name: vendorRegisterRoute };
+  if (!isVendorUser || (!isVendorRoute && !isVendorRegisterPage)) {
+    return null;
   }
 
-  // 如果是商家用户,已有商家信息,正在访问注册页面,则跳转到首页
-  if (isVendorUser && hasStoreInfo && isVendorRegisterPage) {
-    return { name: rootRoute };
+  await authStore.refreshVendorStoreStatus(true);
+
+  const hasStoreInfo = authStore.hasVendorStore;
+  const canManageStore = authStore.canManageVendorStore;
+  const storeState = authStore.vendorStore?.state; // 获取商家审核状态
+
+  // 如果是商家用户,没有注册商家信息,且不在商家注册页面,则跳转到注册页
+  if (!hasStoreInfo && !isVendorRegisterPage && isVendorRoute) {
+    return {
+      name: vendorRegisterRoute,
+      query: { redirect: to.fullPath }
+    };
   }
+
+  // 允许审核通过(APPROVED)的商家访问注册页面进行信息修改
+  // 不再阻止已有店铺信息的商家访问注册页面
+  // if (hasStoreInfo && canManageStore && isVendorRegisterPage) {
+  //   return { name: rootRoute };
+  // }
 
   return null;
 }

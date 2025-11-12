@@ -184,12 +184,14 @@ async def update_my_store(
     if not store:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="商家不存在")
 
-    update_data = store_update.model_dump(exclude_unset=True, by_alias=True)
+    # 使用by_alias=False获取实际的属性名，而不是别名
+    update_data = store_update.model_dump(exclude_unset=True, by_alias=False)
     for key, value in update_data.items():
         setattr(store, key, value)
 
-    store.state = StoreState.PENDING
-    store.review_time = None
+    # 修改后保持原有审核状态，无需重新审核
+    # store.state = StoreState.PENDING
+    # store.review_time = None
 
     session.add(store)
     await session.commit()
@@ -224,15 +226,14 @@ async def update_store(
             status_code=status.HTTP_403_FORBIDDEN, detail="您没有权限修改该商家信息"
         )
 
-    # 更新商家信息
-    update_data = store_update.model_dump(exclude_unset=True, by_alias=True)
+    # 更新商家信息 - 使用by_alias=False获取实际的属性名
+    update_data = store_update.model_dump(exclude_unset=True, by_alias=False)
     for key, value in update_data.items():
         setattr(store, key, value)
 
-    # 如果不是管理员修改，需要重新审核
-    if current_user.user_type != UserType.ADMIN:
-        store.state = StoreState.PENDING
-        store.review_time = None
+    # 修改后保持原有审核状态，无需重新审核
+    # 如果商家已经通过审核(APPROVED)，修改后仍然保持APPROVED状态
+    # 这样审核通过的商家可以随时更新自己的信息
 
     session.add(store)
     await session.commit()

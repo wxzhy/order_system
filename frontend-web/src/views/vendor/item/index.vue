@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElButton, ElImage, ElPopconfirm, ElResult, ElSkeleton, ElTag } from 'element-plus';
 import { batchDeleteItem, deleteItem, fetchGetItemList } from '@/service/api';
@@ -226,20 +226,25 @@ const blockMessage = computed(() => {
   }
 });
 
-watch(
-  () => ({ loading: statusLoading.value, manageable: canManage.value }),
-  ({ loading, manageable }) => {
-    if (loading || manageable || redirectHandled.value) {
-      return;
-    }
+watchEffect(() => {
+  if (statusLoading.value || canManage.value || redirectHandled.value) {
+    return;
+  }
 
-    redirectHandled.value = true;
-    const message = blockMessage.value || '当前账号无权使用商家功能，请先完成商家注册';
-    window.$message?.error(message);
-    router.replace('/vendor/register');
-  },
-  { immediate: true }
-);
+  redirectHandled.value = true;
+  const message = blockMessage.value || '当前账号无权使用商家功能，请前往商家注册';
+  window.$message?.error(message);
+
+  const redirectQuery =
+    router.currentRoute.value.fullPath && router.currentRoute.value.fullPath !== '/vendor/register'
+      ? { redirect: router.currentRoute.value.fullPath }
+      : undefined;
+
+  router.replace({
+    name: 'vendor_register',
+    query: redirectQuery
+  });
+});
 </script>
 
 <template>
@@ -247,12 +252,7 @@ watch(
     <ElSkeleton v-if="statusLoading" animated :rows="6" />
 
     <template v-else>
-      <ElResult
-        v-if="!canManage"
-        icon="info"
-        title="当前无法管理餐点"
-        :sub-title="blockMessage"
-      >
+      <ElResult v-if="!canManage" icon="info" title="当前无法管理餐点" :sub-title="blockMessage">
         <template #extra>
           <RouterLink to="/vendor/register">
             <ElButton type="primary">前往商家注册</ElButton>
@@ -262,55 +262,32 @@ watch(
       </ElResult>
 
       <template v-else>
-        <ItemSearch v-model:model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
+        <ItemSearch v-model="searchParams" @reset="resetSearchParams" @search="getDataByPage" />
 
         <ElCard class="card-wrapper sm:flex-1-hidden" :body-style="{ flex: 1, overflow: 'hidden' }">
           <template #header>
             <div class="flex items-center justify-between">
               <p class="m-0 text-16px font-600">餐点列表</p>
-              <TableHeaderOperation
-                v-model:columns="columnChecks"
-                :disabled-delete="checkedRowKeys.length === 0"
-                :loading="loading"
-                @add="handleAdd"
-                @delete="handleBatchDelete"
-                @refresh="getData"
-              />
+              <TableHeaderOperation v-model:columns="columnChecks" :disabled-delete="checkedRowKeys.length === 0"
+                :loading="loading" @add="handleAdd" @delete="handleBatchDelete" @refresh="getData" />
             </div>
           </template>
-          <ElTable
-            v-loading="loading"
-            :data="data"
-            border
-            stripe
-            height="100%"
-            @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))"
-          >
+          <ElTable v-loading="loading" :data="data" border stripe height="100%"
+            @selection-change="(rows: any[]) => (checkedRowKeys = rows.map(row => row.id))">
             <template v-for="column in columns" :key="column.prop">
               <ElTableColumn v-if="!column.hidden" v-bind="column" />
             </template>
           </ElTable>
           <template #footer>
-            <ElPagination
-              v-model:current-page="mobilePagination.currentPage"
-              v-model:page-size="mobilePagination.pageSize"
-              :total="mobilePagination.total"
-              :page-sizes="[30, 50, 100]"
-              :background="true"
-              layout="total, prev, pager, next, sizes"
-              @current-change="getDataByPage"
-              @size-change="getDataByPage"
-            />
+            <ElPagination v-model:current-page="mobilePagination.currentPage"
+              v-model:page-size="mobilePagination.pageSize" :total="mobilePagination.total" :page-sizes="[30, 50, 100]"
+              :background="true" layout="total, prev, pager, next, sizes" @current-change="getDataByPage"
+              @size-change="getDataByPage" />
           </template>
         </ElCard>
 
-        <ItemOperateDrawer
-          v-model:visible="drawerVisible"
-          :operate-type="operateType"
-          :row-data="editingData"
-          :store-id="storeId ?? undefined"
-          @submitted="getDataByPage"
-        />
+        <ItemOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
+          :store-id="storeId ?? undefined" @submitted="getDataByPage" />
       </template>
     </template>
   </div>
@@ -322,6 +299,3 @@ watch(
   flex-direction: column;
 }
 </style>
-
-
-

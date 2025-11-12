@@ -31,14 +31,23 @@ type TabNamedNodeMap = NamedNodeMap & {
 
 async function scrollToActiveTab() {
   await nextTick();
-  if (!tabRef.value) return;
+  const tabContainer = tabRef.value;
+  if (!tabContainer) return;
 
-  const { children } = tabRef.value;
+  const { children } = tabContainer;
 
   for (let i = 0; i < children.length; i += 1) {
     const child = children[i];
+    if (!(child instanceof HTMLElement) || !child.parentNode) {
+      continue;
+    }
 
-    const { value: tabId } = (child.attributes as TabNamedNodeMap)[TAB_DATA_ID];
+    const tabAttr = (child.attributes as TabNamedNodeMap)?.[TAB_DATA_ID];
+    if (!tabAttr) {
+      continue;
+    }
+
+    const tabId = tabAttr.value;
 
     if (tabId === tabStore.activeTabId) {
       const { left, width } = child.getBoundingClientRect();
