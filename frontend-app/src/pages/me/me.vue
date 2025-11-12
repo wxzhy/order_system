@@ -308,24 +308,19 @@ function displayStateClass(state: string | undefined) {
     <view v-if="isLoggedIn" class="orders-section card">
       <view class="section-header">
         <view class="section-title">我的订单</view>
-        <u-button
-          class="refresh-button"
-          type="primary"
-          plain
-          shape="circle"
-          size="mini"
-          :loading="ordersLoading"
-          :disabled="ordersLoading"
-          @click="fetchOrders(true)"
-        >
-          刷新
-        </u-button>
+        <view class="section-actions">
+          <u-button class="refresh-button" type="primary" plain shape="circle" size="mini" :loading="ordersLoading"
+            :disabled="ordersLoading" @click="fetchOrders(true)">
+            刷新
+          </u-button>
+        </view>
       </view>
       <view v-if="ordersLoading && !ordersLoaded" class="orders-placeholder">正在加载订单...</view>
       <view v-else-if="ordersError" class="orders-error">{{ ordersError }}</view>
       <view v-else-if="!orders.length" class="orders-placeholder">暂无订单记录</view>
       <view v-else class="order-list">
-        <view v-for="order in orders" :key="order.id" class="order-item">
+        <view v-for="(order, index) in orders" :key="order.id"
+          :class="['order-item', { 'order-item--last': index === orders.length - 1 }]">
           <view class="order-header">
             <view class="order-title">{{ order.store_name || '餐厅订单' }}</view>
             <view class="order-status">
@@ -336,13 +331,7 @@ function displayStateClass(state: string | undefined) {
           <view class="order-meta">下单时间：{{ formatDateTime(order.create_time) }}</view>
           <view class="order-meta">订单金额：￥{{ formatAmount(order) }}</view>
           <view class="order-actions">
-            <u-button
-              class="order-button"
-              type="primary"
-              size="mini"
-              shape="circle"
-              @click="handleViewOrder(order.id)"
-            >
+            <u-button class="order-button" type="primary" size="mini" shape="circle" @click="handleViewOrder(order.id)">
               查看详情
             </u-button>
           </view>
@@ -353,101 +342,65 @@ function displayStateClass(state: string | undefined) {
     <view v-if="isLoggedIn" class="password-section card">
       <view class="section-title">账户安全</view>
       <view class="section-subtitle">修改登录密码，保障账户安全</view>
-      <u-button
-        class="toggle-password-button"
-        type="primary"
-        plain
-        shape="circle"
-        :custom-style="fullWidthButtonStyle"
-        @click="togglePasswordForm"
-      >
+      <u-button class="toggle-password-button" type="primary" plain shape="circle" :custom-style="fullWidthButtonStyle"
+        @click="togglePasswordForm">
         {{ showPasswordForm ? '收起修改密码' : '修改密码' }}
       </u-button>
       <view v-if="showPasswordForm" class="password-form">
         <view class="form-item">
           <view class="form-label">当前密码</view>
-          <input
-            v-model="passwordForm.oldPassword"
-            class="form-input"
-            type="password"
-            placeholder="请输入当前密码"
-            @input="clearPasswordError('oldPassword')"
-          />
+          <input v-model="passwordForm.oldPassword" class="form-input" type="password" placeholder="请输入当前密码"
+            @input="clearPasswordError('oldPassword')" />
           <view v-if="passwordErrors.oldPassword" class="form-error">{{ passwordErrors.oldPassword }}</view>
         </view>
         <view class="form-item">
           <view class="form-label">新密码</view>
-          <input
-            v-model="passwordForm.newPassword"
-            class="form-input"
-            type="password"
-            placeholder="请输入新密码"
-            @input="clearPasswordError('newPassword')"
-          />
+          <input v-model="passwordForm.newPassword" class="form-input" type="password" placeholder="请输入新密码"
+            @input="clearPasswordError('newPassword')" />
           <view v-if="passwordErrors.newPassword" class="form-error">{{ passwordErrors.newPassword }}</view>
         </view>
         <view class="form-item">
           <view class="form-label">确认新密码</view>
-          <input
-            v-model="passwordForm.confirmPassword"
-            class="form-input"
-            type="password"
-            placeholder="请再次输入新密码"
-            @input="clearPasswordError('confirmPassword')"
-          />
+          <input v-model="passwordForm.confirmPassword" class="form-input" type="password" placeholder="请再次输入新密码"
+            @input="clearPasswordError('confirmPassword')" />
           <view v-if="passwordErrors.confirmPassword" class="form-error">{{ passwordErrors.confirmPassword }}</view>
         </view>
         <view class="password-actions">
-          <u-button
-            class="password-cancel-button"
-            type="primary"
-            plain
-            shape="circle"
-            :disabled="passwordSubmitting"
-            @click="togglePasswordForm"
-          >
+          <u-button class="password-cancel-button" type="primary" plain shape="circle" :disabled="passwordSubmitting"
+            @click="togglePasswordForm">
             取消
           </u-button>
-          <u-button
-            class="password-submit-button"
-            type="primary"
-            shape="circle"
-            :loading="passwordSubmitting"
-            :disabled="passwordSubmitting"
-            @click="handlePasswordSubmit"
-          >
+          <u-button class="password-submit-button" type="primary" shape="circle" :loading="passwordSubmitting"
+            :disabled="passwordSubmitting" @click="handlePasswordSubmit">
             保存
           </u-button>
         </view>
       </view>
     </view>
 
-    <view class="action-section">
-      <u-button
-        v-if="isLoggedIn"
-        class="action-button"
-        type="error"
-        shape="circle"
-        :custom-style="fullWidthButtonStyle"
-        @click="handleLogout"
-      >
+    <view v-if="isLoggedIn" class="action-section">
+      <u-button class="action-button" type="error" shape="circle" :custom-style="fullWidthButtonStyle"
+        @click="handleLogout">
         退出登录
       </u-button>
-      <u-button
-        v-else
-        class="action-button"
-        type="primary"
-        shape="circle"
-        :custom-style="fullWidthButtonStyle"
-        @click="handleLogin"
-      >
-        立即登录
-      </u-button>
     </view>
+    <view class="tabbar-safe-gap" />
   </view>
 </template>
 
 <style lang="scss" scoped>
+$tabbar-gap: 180rpx;
+
+%safe-area-padding {
+  padding-bottom: $tabbar-gap;
+  padding-bottom: calc(#{$tabbar-gap} + constant(safe-area-inset-bottom));
+  padding-bottom: calc(#{$tabbar-gap} + env(safe-area-inset-bottom));
+}
+
+.section-safe-bottom {
+  @extend %safe-area-padding;
+}
+
 .profile-container {
   min-height: 100vh;
   padding: 32rpx;
@@ -456,7 +409,9 @@ function displayStateClass(state: string | undefined) {
   display: flex;
   flex-direction: column;
   gap: 32rpx;
-  padding-bottom: 48rpx;
+  padding-bottom: calc(80rpx + #{$tabbar-gap});
+  padding-bottom: calc(80rpx + #{$tabbar-gap} + constant(safe-area-inset-bottom));
+  padding-bottom: calc(80rpx + #{$tabbar-gap} + env(safe-area-inset-bottom));
 }
 
 .card {
@@ -537,8 +492,14 @@ function displayStateClass(state: string | undefined) {
 .section-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 16rpx;
+}
+
+.section-actions {
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .section-title {
@@ -580,6 +541,10 @@ function displayStateClass(state: string | undefined) {
   display: flex;
   flex-direction: column;
   gap: 12rpx;
+}
+
+.order-item--last {
+  margin-bottom: 0;
 }
 
 .order-header {
@@ -697,15 +662,30 @@ function displayStateClass(state: string | undefined) {
 }
 
 .action-section {
-  margin-top: auto;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+  position: relative;
+  z-index: 0;
 }
 
 .action-button {
   width: 100%;
   font-size: 32rpx;
   font-weight: 600;
+  position: relative;
+  z-index: 0;
+}
+
+:deep(.action-button.u-button) {
+  position: relative;
+  z-index: 0;
+}
+
+.tabbar-safe-gap {
+  flex-shrink: 0;
+  height: $tabbar-gap;
+  height: calc(#{$tabbar-gap} + constant(safe-area-inset-bottom));
+  height: calc(#{$tabbar-gap} + env(safe-area-inset-bottom));
 }
 </style>

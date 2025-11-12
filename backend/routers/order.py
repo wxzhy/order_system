@@ -465,7 +465,15 @@ async def update_order(
 
     elif current_user.user_type == UserType.ADMIN:
         # 管理员可以修改任何订单状态
-        pass
+        if (
+            order_update.state == OrderState.CANCELLED
+            and order.state != OrderState.CANCELLED
+        ):
+            for order_item in order.items:
+                item = await session.get(Item, order_item.item_id)
+                if item:
+                    item.quantity += order_item.quantity
+                    session.add(item)
 
     # 更新订单状态
     order.state = order_update.state

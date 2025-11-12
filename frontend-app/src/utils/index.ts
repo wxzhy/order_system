@@ -50,7 +50,8 @@ export function ensureDecodeURIComponent(url: string) {
  * 输出: {path: /pages/login/login, query: {redirect: /pages/demo/base/route-interceptor}}
  */
 export function parseUrlToObj(url: string) {
-  const [path, queryStr] = url.split('?')
+  const [rawPath, queryStr] = url.split('?')
+  const path = rawPath ? (rawPath.startsWith('/') ? rawPath : `/${rawPath}`) : ''
   // console.log(path, queryStr)
 
   if (!queryStr) {
