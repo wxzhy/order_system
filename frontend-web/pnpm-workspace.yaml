@@ -1,0 +1,13 @@
+packages:
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - core-js
+  - core-js-pure
+  - es5-ext
+  - esbuild
+  - simple-git-hooks
+  - typeit
+  - unrs-resolver
+  - vue-demi
