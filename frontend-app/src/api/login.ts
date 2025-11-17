@@ -1,9 +1,6 @@
 import type {
   EmailCodeRequest,
-<<<<<<< HEAD
-=======
   EmailLoginPayload,
->>>>>>> HEAD@{1}
   LoginPayload,
   RegisterPayload,
   ResetPasswordPayload,
@@ -22,19 +19,13 @@ export function login(payload: LoginPayload) {
 }
 
 /**
-<<<<<<< HEAD
-=======
  * 邮箱验证码登录
- */
-export function emailLogin(payload: EmailLoginPayload) {
   return http.post<TokenResponse>('/auth/login/email', payload)
 }
 
 /**
->>>>>>> HEAD@{1}
  * 刷新令牌
  */
-export function refreshToken(refreshTokenValue: string) {
   return http.post<TokenResponse>('/auth/refresh', { refresh_token: refreshTokenValue })
 }
 

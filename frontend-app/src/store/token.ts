@@ -1,12 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-<<<<<<< HEAD
-import { login as loginApi, refreshToken as refreshTokenApi } from '@/api/login'
-import type { LoginPayload, TokenInfo, TokenResponse } from '@/api/types/login'
-=======
 import { emailLogin as emailLoginApi, login as loginApi, refreshToken as refreshTokenApi } from '@/api/login'
 import type { EmailLoginPayload, LoginPayload, TokenInfo, TokenResponse } from '@/api/types/login'
->>>>>>> HEAD@{1}
 import { isDoubleTokenMode } from '@/utils'
 import { useUserStore } from './user'
 
@@ -126,8 +121,6 @@ export const useTokenStore = defineStore(
       }
     }
 
-<<<<<<< HEAD
-=======
     const emailLogin = async (payload: EmailLoginPayload) => {
       try {
         const response = await emailLoginApi(payload)
@@ -142,7 +135,6 @@ export const useTokenStore = defineStore(
       }
     }
 
->>>>>>> HEAD@{1}
     const logout = () => {
       clearTokenInfo()
       const userStore = useUserStore()
@@ -190,10 +182,7 @@ export const useTokenStore = defineStore(
 
     return {
       login,
-<<<<<<< HEAD
-=======
       emailLogin,
->>>>>>> HEAD@{1}
       logout,
       refreshToken,
       tryGetValidToken,
