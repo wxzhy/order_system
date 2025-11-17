@@ -1,16 +1,4 @@
 from email.message import EmailMessage
-<<<<<<< HEAD
-import os
-import smtplib
-
-
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-SMTP_FROM = os.getenv("SMTP_FROM") or SMTP_USER
-SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() in {"1", "true", "yes", "on"}
-=======
 import smtplib
 
 from backend.config import get_config
@@ -25,7 +13,6 @@ SMTP_USER = smtp_config["user"]
 SMTP_PASSWORD = smtp_config["password"]
 SMTP_FROM = smtp_config["from"]
 SMTP_USE_TLS = smtp_config["use_tls"]
->>>>>>> HEAD@{1}
 
 
 def send_email(subject: str, body: str, to_email: str) -> None:

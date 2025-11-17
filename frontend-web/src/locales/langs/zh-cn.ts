@@ -1,10 +1,6 @@
 const local: App.I18n.Schema = {
   system: {
-<<<<<<< HEAD
-    title: 'Soybean 管理系统',
-=======
     title: '食堂餐点预约系统',
->>>>>>> HEAD@{1}
     updateTitle: '系统版本更新通知',
     updateContent: '检测到系统有新版本发布，是否立即刷新页面？',
     updateConfirm: '立即刷新',
@@ -272,11 +268,7 @@ const local: App.I18n.Schema = {
         welcomeBack: '欢迎回来，{userName} ！'
       },
       pwdLogin: {
-<<<<<<< HEAD
-        hint: '欢迎使用餐饮预订系统，请输入账号和密码继续。',
-=======
         hint: '欢迎使用食堂餐点预约系统，请输入账号和密码继续。',
->>>>>>> HEAD@{1}
         title: '密码登录',
         rememberMe: '记住我',
         forgetPassword: '忘记密码？',
@@ -313,11 +305,7 @@ const local: App.I18n.Schema = {
     },
     about: {
       title: '关于',
-<<<<<<< HEAD
-      introduction: `SoybeanAdmin 是一个优雅且功能强大的后台管理模板，基于最新的前端技术栈，包括 Vue3, Vite5, TypeScript, Pinia 和 UnoCSS。它内置了丰富的主题配置和组件，代码规范严谨，实现了自动化的文件路由系统。此外，它还采用了基于 ApiFox 的在线Mock数据方案。SoybeanAdmin 为您提供了一站式的后台管理解决方案，无需额外配置，开箱即用。同样是一个快速学习前沿技术的最佳实践。`,
-=======
       introduction: `食堂餐点预约系统是一个功能完善的餐饮预约管理平台，基于现代化的前端技术栈，包括 Vue3, Vite, TypeScript, Pinia 和 UnoCSS。系统提供了商家管理、菜品管理、订单处理、评论审核等核心功能，帮助食堂高效管理餐点预约业务。界面简洁美观，操作便捷流畅，为管理员、商家和用户提供一站式的餐饮预约解决方案。`,
->>>>>>> HEAD@{1}
       projectInfo: {
         title: '项目信息',
         version: '版本',
@@ -330,11 +318,7 @@ const local: App.I18n.Schema = {
     },
     home: {
       branchDesc:
-<<<<<<< HEAD
-        '欢迎使用订餐订单系统，实时掌握今日业务动态。',
-=======
         '欢迎使用食堂餐点预约系统，实时掌握今日业务动态。',
->>>>>>> HEAD@{1}
       greeting: '欢迎回来，{userName}！',
       weatherDesc: '祝你今天顺利，别忘了及时查看待办任务。',
       projectCount: '项目数',
