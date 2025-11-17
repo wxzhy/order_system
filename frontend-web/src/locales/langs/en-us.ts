@@ -1,6 +1,10 @@
 const local: App.I18n.Schema = {
   system: {
+<<<<<<< HEAD
     title: 'SoybeanAdmin',
+=======
+    title: 'Canteen Meal Booking System',
+>>>>>>> HEAD@{1}
     updateTitle: 'System Version Update Notification',
     updateContent: 'A new version of the system has been detected. Do you want to refresh the page immediately?',
     updateConfirm: 'Refresh immediately',
@@ -260,7 +264,11 @@ const local: App.I18n.Schema = {
         welcomeBack: 'Welcome back, {userName}!'
       },
       pwdLogin: {
+<<<<<<< HEAD
         hint: 'Welcome to the order reservation platform. Please sign in with your account.',
+=======
+        hint: 'Welcome to Canteen Meal Booking System. Please sign in with your account.',
+>>>>>>> HEAD@{1}
         title: 'Password login',
         rememberMe: 'Remember me',
         forgetPassword: 'Forgot password?',
@@ -297,7 +305,11 @@ const local: App.I18n.Schema = {
     },
     about: {
       title: 'About',
+<<<<<<< HEAD
       introduction: `SoybeanAdmin is an elegant and powerful admin template, based on the latest front-end technology stack, including Vue3, Vite5, TypeScript, Pinia and UnoCSS. It has built-in rich theme configuration and components, strict code specifications, and an automated file routing system. In addition, it also uses the online mock data solution based on ApiFox. SoybeanAdmin provides you with a one-stop admin solution, no additional configuration, and out of the box. It is also a best practice for learning cutting-edge technologies quickly.`,
+=======
+      introduction: `Canteen Meal Booking System is a comprehensive catering reservation management platform built with modern front-end technologies including Vue3, Vite, TypeScript, Pinia, and UnoCSS. The system provides core functions such as merchant management, menu management, order processing, and review moderation, helping canteens efficiently manage meal booking business. With a clean and beautiful interface and smooth operations, it offers a one-stop solution for administrators, merchants, and users.`,
+>>>>>>> HEAD@{1}
       projectInfo: {
         title: 'Project Info',
         version: 'Version',
@@ -310,7 +322,11 @@ const local: App.I18n.Schema = {
     },
     home: {
       branchDesc:
+<<<<<<< HEAD
         "Welcome to the order management dashboard. Keep an eye on today's progress at a glance.",
+=======
+        "Welcome to Canteen Meal Booking System. Keep an eye on today's progress at a glance.",
+>>>>>>> HEAD@{1}
 
       greeting: 'Welcome back, {userName}!',
       weatherDesc: 'Have a productive day and remember to check your pending tasks.',

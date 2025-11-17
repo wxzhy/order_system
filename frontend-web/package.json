@@ -71,7 +71,11 @@
     "dhtmlx-gantt": "9.0.14",
     "dompurify": "3.2.6",
     "echarts": "6.0.0",
+<<<<<<< HEAD
     "element-plus": "^2.11.1",
+=======
+    "element-plus": "^2.11.8",
+>>>>>>> HEAD@{1}
     "jsbarcode": "3.12.1",
     "json5": "2.2.3",
     "nprogress": "0.2.0",

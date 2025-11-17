@@ -1,10 +1,16 @@
 import { createAlovaRequest } from '@sa/alova';
+<<<<<<< HEAD
 import { createAlovaMockAdapter } from '@sa/alova/mock';
+=======
+>>>>>>> HEAD@{1}
 import adapterFetch from '@sa/alova/fetch';
 import { useAuthStore } from '@/store/modules/auth';
 import { getServiceBaseURL } from '@/utils/service';
 import { $t } from '@/locales';
+<<<<<<< HEAD
 import featureUsers20241014 from '../mocks/feature-users-20241014';
+=======
+>>>>>>> HEAD@{1}
 import { getAuthorization, handleRefreshToken, showErrorMsg } from './shared';
 import type { RequestInstanceState } from './type';
 
@@ -14,6 +20,7 @@ const { baseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 const state: RequestInstanceState = {
   errMsgStack: []
 };
+<<<<<<< HEAD
 const mockAdapter = createAlovaMockAdapter([featureUsers20241014], {
   // using requestAdapter if not match mock request
   httpAdapter: adapterFetch(),
@@ -29,12 +36,22 @@ export const alova = createAlovaRequest(
   {
     baseURL,
     requestAdapter: import.meta.env.DEV ? mockAdapter : adapterFetch()
+=======
+
+export const alova = createAlovaRequest(
+  {
+    baseURL,
+    requestAdapter: adapterFetch()
+>>>>>>> HEAD@{1}
   },
   {
     onRequest({ config }) {
       const Authorization = getAuthorization();
       config.headers.Authorization = Authorization;
+<<<<<<< HEAD
       config.headers.apifoxToken = 'XL299LiMEDZ0H5h3A29PxwQXdMJqWyY2';
+=======
+>>>>>>> HEAD@{1}
     },
     tokenRefresher: {
       async isExpired(response) {

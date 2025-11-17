@@ -32,6 +32,17 @@ export interface LoginPayload {
 }
 
 /**
+<<<<<<< HEAD
+=======
+ * 邮箱验证码登录请求体
+ */
+export interface EmailLoginPayload {
+  email: string
+  verification_code: string
+}
+
+/**
+>>>>>>> HEAD@{1}
  * 注册请求体
  */
 export interface RegisterPayload {

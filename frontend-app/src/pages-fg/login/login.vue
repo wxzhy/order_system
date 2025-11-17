@@ -1,7 +1,11 @@
 <script lang="ts" setup>
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+<<<<<<< HEAD
 import { REGISTER_PAGE, RESET_PASSWORD_PAGE } from '@/router/config'
+=======
+import { EMAIL_LOGIN_PAGE, REGISTER_PAGE, RESET_PASSWORD_PAGE } from '@/router/config'
+>>>>>>> HEAD@{1}
 import { useTokenStore } from '@/store/token'
 import { tabbarList } from '@/tabbar/config'
 import { isPageTabbar } from '@/tabbar/store'
@@ -77,6 +81,13 @@ function goToResetPassword() {
   uni.navigateTo({ url: RESET_PASSWORD_PAGE })
 }
 
+<<<<<<< HEAD
+=======
+function goToEmailLogin() {
+  uni.navigateTo({ url: EMAIL_LOGIN_PAGE })
+}
+
+>>>>>>> HEAD@{1}
 function redirectAfterLogin() {
   let target = redirectUrl.value || tabbarList[0].pagePath
   if (!target.startsWith('/'))
@@ -195,6 +206,12 @@ async function handleLogin() {
           <text class="link-text" @tap="goToRegister">立即注册</text>
         </view>
         <view class="link-item">
+<<<<<<< HEAD
+=======
+          <text class="link-text" @tap="goToEmailLogin">使用验证码登录</text>
+        </view>
+        <view class="link-item">
+>>>>>>> HEAD@{1}
           <text>忘记密码？</text>
           <text class="link-text" @tap="goToResetPassword">重置密码</text>
         </view>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+<<<<<<< HEAD
 import { computed } from 'vue';
 import { useAppStore } from '@/store/modules/app';
 import HeaderBanner from './modules/header-banner.vue';
@@ -11,11 +12,16 @@ import CreativityBanner from './modules/creativity-banner.vue';
 const appStore = useAppStore();
 
 const gap = computed(() => (appStore.isMobile ? 0 : 16));
+=======
+import HeaderBanner from './modules/header-banner.vue';
+import CardData from './modules/card-data.vue';
+>>>>>>> HEAD@{1}
 </script>
 
 <template>
   <ElSpace direction="vertical" fill class="full-space pb-0" :size="0">
     <HeaderBanner class="mb-16px" />
+<<<<<<< HEAD
     <CardData class="mb-16px" />
     <ElRow :gutter="gap" class="w-full">
       <ElCol :lg="14" :sm="24" class="mb-16px">
@@ -33,6 +39,9 @@ const gap = computed(() => (appStore.isMobile ? 0 : 16));
         <CreativityBanner />
       </ElCol>
     </ElRow>
+=======
+    <CardData />
+>>>>>>> HEAD@{1}
   </ElSpace>
 </template>
 

@@ -10,6 +10,10 @@ dependencies = [
     "fastapi[all]>=0.120.1",
     "passlib>=1.7.4",
     "pyjwt>=2.10.1",
+<<<<<<< HEAD
+=======
+    "pyyaml>=6.0",
+>>>>>>> HEAD@{1}
     "sqlmodel>=0.0.27",
     "winuvloop>=0.2.0",
 ]
