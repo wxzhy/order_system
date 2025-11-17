@@ -1,0 +1,16 @@
+# 数据库配置
+database:
+  user: root
+  password: "1Qaz@wsx"
+  host: localhost
+  port: 3306
+  name: ordersystem
+
+# SMTP邮件配置
+smtp:
+  host: smtp.example.com
+  port: 587
+  user: your-email@example.com
+  password: your-email-password
+  from: your-email@example.com
+  use_tls: true
