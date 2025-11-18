@@ -5,7 +5,7 @@ import dayjs from 'dayjs'
 import type { IUploadSuccessInfo } from '@/api/types/login'
 import type { IOrder } from '@/api/order'
 import { getOrderList } from '@/api/order'
-import { updateUserPassword } from '@/api/login'
+import { updateUserPassword, deleteUserAccount } from '@/api/login'
 import { storeToRefs } from 'pinia'
 import { LOGIN_PAGE } from '@/router/config'
 import { useUserStore } from '@/store'
@@ -62,6 +62,12 @@ const passwordErrors = reactive({
   newPassword: '',
   confirmPassword: '',
 })
+
+// 删除账号相关状态
+const showDeleteForm = ref(false)
+const deleteSubmitting = ref(false)
+const deletePassword = ref('')
+const deleteError = ref('')
 
 type PasswordField = keyof typeof passwordErrors
 
@@ -231,10 +237,76 @@ function handleLogout() {
         ordersLoading.value = false
         showPasswordForm.value = false
         resetPasswordForm()
+        showDeleteForm.value = false
+        deletePassword.value = ''
+        deleteError.value = ''
         uni.showToast({
           title: '已退出登录',
           icon: 'success',
         })
+      }
+    },
+  })
+}
+
+// 切换删除账号表单
+function toggleDeleteForm() {
+  if (!isLoggedIn.value) {
+    handleLogin()
+    return
+  }
+  showDeleteForm.value = !showDeleteForm.value
+  if (!showDeleteForm.value) {
+    deletePassword.value = ''
+    deleteError.value = ''
+  }
+}
+
+// 删除账号
+async function handleDeleteAccount() {
+  if (!isLoggedIn.value) {
+    handleLogin()
+    return
+  }
+
+  deleteError.value = ''
+
+  if (!deletePassword.value) {
+    deleteError.value = '请输入密码'
+    return
+  }
+
+  uni.showModal({
+    title: '警告',
+    content: '删除账号后，您的所有数据将被永久删除且无法恢复。确定要继续吗？',
+    confirmText: '确认删除',
+    confirmColor: '#e74c3c',
+    success: async (res) => {
+      if (res.confirm) {
+        deleteSubmitting.value = true
+        try {
+          await deleteUserAccount(deletePassword.value)
+          uni.showToast({ title: '账号已删除', icon: 'success' })
+          // 清空状态并退出登录
+          tokenStore.logout()
+          orders.value = []
+          ordersLoaded.value = false
+          ordersError.value = ''
+          ordersLoading.value = false
+          showPasswordForm.value = false
+          resetPasswordForm()
+          showDeleteForm.value = false
+          deletePassword.value = ''
+          deleteError.value = ''
+        }
+        catch (error) {
+          console.error('删除账号失败', error)
+          deleteError.value = '删除失败，请检查密码是否正确'
+          uni.showToast({ title: '删除失败', icon: 'none' })
+        }
+        finally {
+          deleteSubmitting.value = false
+        }
       }
     },
   })
@@ -256,6 +328,9 @@ watch(
       ordersLoading.value = false
       showPasswordForm.value = false
       resetPasswordForm()
+      showDeleteForm.value = false
+      deletePassword.value = ''
+      deleteError.value = ''
     }
   },
   { immediate: true },
@@ -373,6 +448,32 @@ function displayStateClass(state: string | undefined) {
           <u-button class="password-submit-button" type="primary" shape="circle" :loading="passwordSubmitting"
             :disabled="passwordSubmitting" @click="handlePasswordSubmit">
             保存
+          </u-button>
+        </view>
+      </view>
+    </view>
+
+    <view v-if="isLoggedIn" class="delete-section card">
+      <view class="section-title">删除账号</view>
+      <view class="section-subtitle warning-text">删除账号后，您的所有数据将被永久删除且无法恢复</view>
+      <u-button class="toggle-delete-button" type="error" plain shape="circle" :custom-style="fullWidthButtonStyle"
+        @click="toggleDeleteForm">
+        {{ showDeleteForm ? '取消删除' : '删除我的账号' }}
+      </u-button>
+      <view v-if="showDeleteForm" class="delete-form">
+        <view class="form-item">
+          <view class="form-label">确认密码</view>
+          <input v-model="deletePassword" class="form-input" type="password" placeholder="请输入密码以确认删除" />
+          <view v-if="deleteError" class="form-error">{{ deleteError }}</view>
+        </view>
+        <view class="delete-actions">
+          <u-button class="delete-cancel-button" type="primary" plain shape="circle" :disabled="deleteSubmitting"
+            @click="toggleDeleteForm">
+            取消
+          </u-button>
+          <u-button class="delete-submit-button" type="error" shape="circle" :loading="deleteSubmitting"
+            :disabled="deleteSubmitting" @click="handleDeleteAccount">
+            确认删除
           </u-button>
         </view>
       </view>
@@ -633,6 +734,41 @@ $tabbar-gap: 180rpx;
   background: #f9fafb;
   border-radius: 20rpx;
   padding: 24rpx;
+}
+
+.delete-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.warning-text {
+  color: #ef4444;
+}
+
+.toggle-delete-button {
+  width: 100%;
+}
+
+.delete-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  background: #fef2f2;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  border: 2rpx solid #fee2e2;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.delete-cancel-button,
+.delete-submit-button {
+  flex: 1;
 }
 
 .form-item {

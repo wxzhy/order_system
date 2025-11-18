@@ -44,6 +44,17 @@ export function fetchChangePassword(oldPassword: string, newPassword: string) {
 }
 
 /**
+ * Delete current user account
+ *
+ * @param password Current password for verification
+ */
+export function fetchDeleteAccount(password: string) {
+  return alova.Delete<{ message: string }>('/user/me', {
+    password
+  });
+}
+
+/**
  * Register new user
  *
  * @param userData User registration data

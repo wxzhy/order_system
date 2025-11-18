@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import type { FormRules } from 'element-plus';
-import { fetchChangePassword, fetchGetUserInfo, fetchUpdateProfile } from '@/service/api';
+import { fetchChangePassword, fetchDeleteAccount, fetchGetUserInfo, fetchUpdateProfile } from '@/service/api';
 import { useAuthStore } from '@/store/modules/auth';
 import { $t } from '@/locales';
 
@@ -10,6 +10,11 @@ defineOptions({ name: 'UserCenter' });
 const authStore = useAuthStore();
 const loading = ref(false);
 const activeTab = ref('profile');
+
+// 删除账号对话框
+const deleteDialogVisible = ref(false);
+const deletePassword = ref('');
+const deleteLoading = ref(false);
 
 // 用户信息表单
 const userForm = reactive({
@@ -134,6 +139,41 @@ async function handleChangePassword() {
   });
 }
 
+// 打开删除账号对话框
+function openDeleteDialog() {
+  deletePassword.value = '';
+  deleteDialogVisible.value = true;
+}
+
+// 关闭删除账号对话框
+function closeDeleteDialog() {
+  deleteDialogVisible.value = false;
+  deletePassword.value = '';
+}
+
+// 删除账号
+async function handleDeleteAccount() {
+  if (!deletePassword.value) {
+    window.$message?.warning('请输入密码');
+    return;
+  }
+
+  deleteLoading.value = true;
+  try {
+    await fetchDeleteAccount(deletePassword.value);
+    window.$message?.success('账号已删除');
+    closeDeleteDialog();
+    // 退出登录
+    setTimeout(() => {
+      authStore.resetStore();
+    }, 1500);
+  } catch (error: any) {
+    window.$message?.error(error?.message || '删除失败');
+  } finally {
+    deleteLoading.value = false;
+  }
+}
+
 // 初始化加载
 loadUserInfo();
 </script>
@@ -193,7 +233,33 @@ loadUserInfo();
             </ElForm>
           </div>
         </ElTabPane>
+
+        <!-- 账户安全标签页 -->
+        <ElTabPane label="账户安全" name="security">
+          <div class="max-w-600px">
+            <ElAlert title="危险操作" type="error" :closable="false" show-icon style="margin-bottom: 20px;">
+              删除账号后，您的所有数据将被永久删除且无法恢复，请谨慎操作。
+            </ElAlert>
+            <ElButton type="danger" :loading="loading" @click="openDeleteDialog">删除我的账号</ElButton>
+          </div>
+        </ElTabPane>
       </ElTabs>
+
+      <!-- 删除账号确认对话框 -->
+      <ElDialog v-model="deleteDialogVisible" title="删除账号" width="500px" :close-on-click-modal="false">
+        <ElAlert title="警告" type="error" :closable="false" show-icon style="margin-bottom: 20px;">
+          此操作不可撤销！删除账号后，您的所有数据将被永久删除。
+        </ElAlert>
+        <ElForm label-width="100px">
+          <ElFormItem label="输入密码" required>
+            <ElInput v-model="deletePassword" type="password" placeholder="请输入密码以确认删除" show-password />
+          </ElFormItem>
+        </ElForm>
+        <template #footer>
+          <ElButton @click="closeDeleteDialog">取消</ElButton>
+          <ElButton type="danger" :loading="deleteLoading" @click="handleDeleteAccount">确认删除</ElButton>
+        </template>
+      </ElDialog>
     </NCard>
   </div>
 </template>

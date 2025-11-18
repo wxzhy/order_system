@@ -65,6 +65,10 @@ class UserPasswordUpdate(BaseModel):
     new_password: str = Field(..., min_length=6)
 
 
+class UserDeleteRequest(BaseModel):
+    password: str = Field(..., description="当前密码,用于验证")
+
+
 class UserPasswordReset(BaseModel):
     email: EmailStr
     verification_code: str

@@ -78,9 +78,9 @@ class User(SQLModel, table=True):
     create_time: datetime = Field(default_factory=datetime.utcnow)
 
     # Relationships
-    stores: List["Store"] = Relationship(back_populates="owner")
-    orders: List["Order"] = Relationship(back_populates="user")
-    comments: List["Comment"] = Relationship(back_populates="user")
+    stores: List["Store"] = Relationship(back_populates="owner", cascade_delete=True)
+    orders: List["Order"] = Relationship(back_populates="user", cascade_delete=True)
+    comments: List["Comment"] = Relationship(back_populates="user", cascade_delete=True)
 
 
 class Store(SQLModel, table=True):
@@ -110,9 +110,9 @@ class Store(SQLModel, table=True):
     owner: User = Relationship(back_populates="stores")
 
     # Relationships
-    items: List["Item"] = Relationship(back_populates="store")
-    orders: List["Order"] = Relationship(back_populates="store")
-    comments: List["Comment"] = Relationship(back_populates="store")
+    items: List["Item"] = Relationship(back_populates="store", cascade_delete=True)
+    orders: List["Order"] = Relationship(back_populates="store", cascade_delete=True)
+    comments: List["Comment"] = Relationship(back_populates="store", cascade_delete=True)
 
 
 class Item(SQLModel, table=True):
@@ -129,7 +129,7 @@ class Item(SQLModel, table=True):
     store: Store = Relationship(back_populates="items")
 
     # Relationships
-    order_items: List["OrderItem"] = Relationship(back_populates="item")
+    order_items: List["OrderItem"] = Relationship(back_populates="item", cascade_delete=True)
 
 
 class Order(SQLModel, table=True):
@@ -156,7 +156,7 @@ class Order(SQLModel, table=True):
     store: Store = Relationship(back_populates="orders")
 
     # Relationships
-    items: List[OrderItem] = Relationship(back_populates="order")
+    items: List[OrderItem] = Relationship(back_populates="order", cascade_delete=True)
 
 
 class Comment(SQLModel, table=True):

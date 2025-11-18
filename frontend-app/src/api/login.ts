@@ -73,3 +73,10 @@ export function updateInfo(data: UpdateInfoPayload) {
 export function updateUserPassword(data: UpdatePasswordPayload) {
   return http.put('/user/me/password', data)
 }
+
+/**
+ * 删除当前用户账号
+ */
+export function deleteUserAccount(password: string) {
+  return http.delete('/user/me', { password })
+}
