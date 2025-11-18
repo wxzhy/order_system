@@ -101,9 +101,7 @@ async def delete_my_account(
     """注销当前用户账户(需要验证密码)"""
     # 验证密码
     if not verify_password(delete_request.password, current_user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="密码错误"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="密码错误")
 
     await session.delete(current_user)
     await session.commit()

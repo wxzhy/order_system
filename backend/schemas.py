@@ -1,7 +1,13 @@
 from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel, EmailStr, Field
-from backend.models import UserType, StoreState, OrderState, CommentState, VerificationScene
+from backend.models import (
+    UserType,
+    StoreState,
+    OrderState,
+    CommentState,
+    VerificationScene,
+)
 
 
 # ============ Generic Pagination Response ============

@@ -31,6 +31,7 @@ class CommentState(str, enum.Enum):
     APPROVED = "approved"  # 审核通过 [cite: 80]
     REJECTED = "rejected"  # 审核未通过 [cite: 80]
 
+
 class VerificationScene(str, enum.Enum):
     LOGIN = "login"
     REGISTER = "register"
@@ -112,7 +113,9 @@ class Store(SQLModel, table=True):
     # Relationships
     items: List["Item"] = Relationship(back_populates="store", cascade_delete=True)
     orders: List["Order"] = Relationship(back_populates="store", cascade_delete=True)
-    comments: List["Comment"] = Relationship(back_populates="store", cascade_delete=True)
+    comments: List["Comment"] = Relationship(
+        back_populates="store", cascade_delete=True
+    )
 
 
 class Item(SQLModel, table=True):
@@ -129,7 +132,9 @@ class Item(SQLModel, table=True):
     store: Store = Relationship(back_populates="items")
 
     # Relationships
-    order_items: List["OrderItem"] = Relationship(back_populates="item", cascade_delete=True)
+    order_items: List["OrderItem"] = Relationship(
+        back_populates="item", cascade_delete=True
+    )
 
 
 class Order(SQLModel, table=True):
