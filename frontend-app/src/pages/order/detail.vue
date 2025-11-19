@@ -5,6 +5,7 @@ import { getOrderDetail } from '@/api/order'
 
 const order = ref<Awaited<ReturnType<typeof getOrderDetail>> | null>(null)
 const loading = ref(false)
+const canGoBack = ref(false)
 
 const statusMap: Record<string, { text: string; type: 'warning' | 'success' | 'error' | 'info' }> = {
   pending: { text: '待审核', type: 'warning' },
@@ -19,7 +20,13 @@ function getStatusConfig(state?: string) {
   return statusMap[state] ?? { text: state, type: 'info' as const }
 }
 
+function updateCanGoBack() {
+  const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+  canGoBack.value = Array.isArray(pages) && pages.length > 1
+}
+
 onLoad(async (options) => {
+  updateCanGoBack()
   if (!options?.id) {
     uni.showToast({
       title: "未找到订单",
@@ -46,6 +53,14 @@ onLoad(async (options) => {
     loading.value = false
   }
 })
+function handleGoBack() {
+  const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
+  if (Array.isArray(pages) && pages.length > 1)
+    uni.navigateBack()
+  else
+    uni.switchTab({ url: '/pages/me/me' })
+}
+
 </script>
 
 <template>
@@ -82,6 +97,12 @@ onLoad(async (options) => {
           <text>合计</text>
           <text class="total-amount">￥{{ order.total_amount.toFixed(2) }}</text>
         </view>
+      </view>
+
+      <view class="section footer-actions">
+        <u-button class="back-button" type="primary" shape="circle" @click="handleGoBack">
+          {{ canGoBack ? '返回上一页' : '返回我的订单' }}
+        </u-button>
       </view>
     </view>
   </view>
@@ -171,5 +192,12 @@ onLoad(async (options) => {
 .total-amount {
   color: #ef4444;
 }
-</style>
 
+.footer-actions {
+  margin-top: 12rpx;
+}
+
+.back-button {
+  width: 100%;
+}
+</style>

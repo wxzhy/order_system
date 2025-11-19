@@ -166,15 +166,22 @@ async function handleSubmit() {
       password: form.password,
       verification_code: form.verificationCode.trim(),
     })
-    uni.showToast({ title: '注册成功，请登录', icon: 'success' })
+    uni.showToast({ title: '注册成功，前往登录', icon: 'success' })
     stopCountdown()
     setTimeout(() => {
       uni.redirectTo({ url: LOGIN_PAGE })
     }, 800)
   }
-  catch (error) {
+  catch (error: any) {
     console.error('注册失败', error)
-    uni.showToast({ title: '注册失败，请稍后重试', icon: 'none' })
+    const message = error?.data?.detail || error?.data?.msg || error?.data?.message || error?.errMsg || '注册失败，请稍后再试'
+    if (message.includes('邮箱'))
+      errors.email = message
+    else if (message.includes('验证码'))
+      errors.verificationCode = message
+    else if (message.includes('用户名'))
+      errors.username = message
+    uni.showToast({ title: message, icon: 'none' })
   }
   finally {
     isSubmitting.value = false

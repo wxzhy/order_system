@@ -2,10 +2,10 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import dayjs from 'dayjs'
-import type { IUploadSuccessInfo } from '@/api/types/login'
+import type { IUploadSuccessInfo, UpdateInfoPayload } from '@/api/types/login'
 import type { IOrder } from '@/api/order'
 import { getOrderList } from '@/api/order'
-import { updateUserPassword, deleteUserAccount } from '@/api/login'
+import { updateUserPassword, deleteUserAccount, updateInfo } from '@/api/login'
 import { storeToRefs } from 'pinia'
 import { LOGIN_PAGE } from '@/router/config'
 import { useUserStore } from '@/store'
@@ -50,7 +50,28 @@ const ordersLoading = ref(false)
 const ordersLoaded = ref(false)
 const ordersError = ref('')
 
-const showPasswordForm = ref(false)
+const SETTINGS_SECTIONS = {
+  PROFILE: 'profile',
+  PASSWORD: 'password',
+  DELETE: 'delete',
+} as const
+type SettingsSection = (typeof SETTINGS_SECTIONS)[keyof typeof SETTINGS_SECTIONS]
+
+const settingsCollapse = ref<SettingsSection[]>([])
+const showProfileForm = computed(() => settingsCollapse.value.includes(SETTINGS_SECTIONS.PROFILE))
+const profileSubmitting = ref(false)
+const profileForm = reactive({
+  username: '',
+  email: '',
+  phone: '',
+})
+const profileErrors = reactive({
+  username: '',
+  email: '',
+  phone: '',
+})
+
+const showPasswordForm = computed(() => settingsCollapse.value.includes(SETTINGS_SECTIONS.PASSWORD))
 const passwordSubmitting = ref(false)
 const passwordForm = reactive({
   oldPassword: '',
@@ -63,13 +84,62 @@ const passwordErrors = reactive({
   confirmPassword: '',
 })
 
-// 删除账号相关状态
-const showDeleteForm = ref(false)
+const showDeleteForm = computed(() => settingsCollapse.value.includes(SETTINGS_SECTIONS.DELETE))
 const deleteSubmitting = ref(false)
 const deletePassword = ref('')
 const deleteError = ref('')
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phonePattern = /^[0-9+\-]{5,20}$/
+
 type PasswordField = keyof typeof passwordErrors
+type ProfileField = keyof typeof profileErrors
+
+function handleSettingsCollapseChange(names: string[] | string) {
+  const next = Array.isArray(names) ? (names as SettingsSection[]) : [names as SettingsSection]
+  if (!isLoggedIn.value) {
+    settingsCollapse.value = []
+    handleLogin()
+    return
+  }
+  settingsCollapse.value = next
+}
+
+function closeSettingSection(section: SettingsSection) {
+  if (!settingsCollapse.value.includes(section))
+    return
+  settingsCollapse.value = settingsCollapse.value.filter((name) => name !== section)
+}
+
+function resetSectionState(section: SettingsSection) {
+  if (section === SETTINGS_SECTIONS.PROFILE)
+    resetProfileForm()
+  else if (section === SETTINGS_SECTIONS.PASSWORD)
+    resetPasswordForm()
+  else
+    resetDeleteState()
+}
+
+function resetDeleteState() {
+  deletePassword.value = ''
+  deleteError.value = ''
+}
+
+watch(
+  settingsCollapse,
+  (newVal, oldVal) => {
+    if (oldVal) {
+      const removed = oldVal.filter((name) => !newVal.includes(name))
+      removed.forEach((section) => resetSectionState(section))
+    }
+    const openedProfile =
+      (!oldVal || !oldVal.includes(SETTINGS_SECTIONS.PROFILE)) &&
+      newVal.includes(SETTINGS_SECTIONS.PROFILE)
+    if (openedProfile)
+      syncProfileForm()
+  },
+  { deep: true },
+)
 
 const orderStatusMap: Record<string, { text: string; tagClass: string }> = {
   pending: { text: '待审核', tagClass: 'pending' },
@@ -126,83 +196,115 @@ async function fetchOrders(forceRefresh = false) {
   }
 }
 
-function resetPasswordForm() {
-  passwordForm.oldPassword = ''
-  passwordForm.newPassword = ''
-  passwordForm.confirmPassword = ''
-  passwordErrors.oldPassword = ''
-  passwordErrors.newPassword = ''
-  passwordErrors.confirmPassword = ''
-}
-
-function clearPasswordError(field: PasswordField) {
-  passwordErrors[field] = ''
-}
-
-function togglePasswordForm() {
+function syncProfileForm() {
   if (!isLoggedIn.value) {
-    handleLogin()
+    profileForm.username = ''
+    profileForm.email = ''
+    profileForm.phone = ''
     return
   }
-  showPasswordForm.value = !showPasswordForm.value
-  if (!showPasswordForm.value)
-    resetPasswordForm()
+  profileForm.username = userInfo.value.username || ''
+  profileForm.email = userInfo.value.email || ''
+  profileForm.phone = userInfo.value.phone || ''
 }
 
-function validatePasswordForm() {
+function resetProfileForm() {
+  profileErrors.username = ''
+  profileErrors.email = ''
+  profileErrors.phone = ''
+  if (isLoggedIn.value)
+    syncProfileForm()
+  else {
+    profileForm.username = ''
+    profileForm.email = ''
+    profileForm.phone = ''
+  }
+}
+
+function clearProfileError(field: ProfileField) {
+  profileErrors[field] = ''
+}
+
+function validateProfileForm(): UpdateInfoPayload | null {
+  profileErrors.username = ''
+  profileErrors.email = ''
+  profileErrors.phone = ''
   let valid = true
-  passwordErrors.oldPassword = ''
-  passwordErrors.newPassword = ''
-  passwordErrors.confirmPassword = ''
 
-  if (!passwordForm.oldPassword) {
-    passwordErrors.oldPassword = '请输入当前密码'
-    valid = false
-  }
-  if (!passwordForm.newPassword) {
-    passwordErrors.newPassword = '请输入新密码'
-    valid = false
-  }
-  else if (passwordForm.newPassword.length < 6) {
-    passwordErrors.newPassword = '新密码长度不能少于6位'
-    valid = false
-  }
-  if (!passwordForm.confirmPassword) {
-    passwordErrors.confirmPassword = '请再次输入新密码'
-    valid = false
-  }
-  else if (passwordForm.confirmPassword !== passwordForm.newPassword) {
-    passwordErrors.confirmPassword = '两次输入的新密码不一致'
+  const username = profileForm.username.trim()
+  const email = profileForm.email.trim()
+  const phone = profileForm.phone.trim()
+
+  if (!username) {
+    profileErrors.username = '请输入用户名'
     valid = false
   }
 
-  return valid
+  if (!email) {
+    profileErrors.email = '请输入邮箱'
+    valid = false
+  }
+  else if (!emailPattern.test(email)) {
+    profileErrors.email = '邮箱格式不正确'
+    valid = false
+  }
+
+  if (phone && !phonePattern.test(phone)) {
+    profileErrors.phone = '手机号格式不正确'
+    valid = false
+  }
+
+  if (!valid)
+    return null
+
+  const payload: UpdateInfoPayload = {}
+  if (username !== (userInfo.value.username || ''))
+    payload.username = username
+  if (email !== (userInfo.value.email || ''))
+    payload.email = email
+  if (phone && phone !== (userInfo.value.phone || ''))
+    payload.phone = phone
+
+  if (!Object.keys(payload).length) {
+    uni.showToast({ title: '尚未修改任何信息', icon: 'none' })
+    return null
+  }
+
+  return payload
 }
 
-async function handlePasswordSubmit() {
+async function handleProfileSubmit() {
   if (!isLoggedIn.value) {
     handleLogin()
     return
   }
-  if (!validatePasswordForm())
+  const payload = validateProfileForm()
+  if (!payload)
     return
 
-  passwordSubmitting.value = true
+  profileSubmitting.value = true
   try {
-    await updateUserPassword({
-      old_password: passwordForm.oldPassword,
-      new_password: passwordForm.newPassword,
-    })
-    uni.showToast({ title: '密码已更新', icon: 'success' })
-    resetPasswordForm()
-    showPasswordForm.value = false
+    await updateInfo(payload)
+    await userStore.fetchUserInfo()
+    uni.showToast({ title: '资料已更新', icon: 'success' })
+    closeSettingSection(SETTINGS_SECTIONS.PROFILE)
   }
-  catch (error) {
-    console.error('修改密码失败', error)
-    uni.showToast({ title: '修改失败，请稍后重试', icon: 'none' })
+  catch (error: any) {
+    console.error('更新用户信息失败', error)
+    const message = error?.data?.detail || error?.data?.msg || error?.data?.message || error?.errMsg || '更新失败，请稍后再试'
+    if (message.includes('邮箱')) {
+      profileErrors.email = message
+    }
+    else if (message.includes('用户名')) {
+      profileErrors.username = message
+    }
+    else if (message.includes('手机号')) {
+      profileErrors.phone = message
+    }
+    uni.showToast({ title: message, icon: 'none' })
   }
   finally {
-    passwordSubmitting.value = false
+    profileSubmitting.value = false
   }
 }
 
@@ -235,6 +337,8 @@ function handleLogout() {
         ordersLoaded.value = false
         ordersError.value = ''
         ordersLoading.value = false
+        showProfileForm.value = false
+        resetProfileForm()
         showPasswordForm.value = false
         resetPasswordForm()
         showDeleteForm.value = false
@@ -293,6 +397,8 @@ async function handleDeleteAccount() {
           ordersLoaded.value = false
           ordersError.value = ''
           ordersLoading.value = false
+          showProfileForm.value = false
+          resetProfileForm()
           showPasswordForm.value = false
           resetPasswordForm()
           showDeleteForm.value = false
@@ -320,12 +426,15 @@ watch(
         console.warn('刷新用户信息失败', error)
       })
       fetchOrders()
+      syncProfileForm()
     }
     else {
       orders.value = []
       ordersLoaded.value = false
       ordersError.value = ''
       ordersLoading.value = false
+      showProfileForm.value = false
+      resetProfileForm()
       showPasswordForm.value = false
       resetPasswordForm()
       showDeleteForm.value = false
@@ -336,12 +445,21 @@ watch(
   { immediate: true },
 )
 
+watch(
+  userInfo,
+  () => {
+    if (isLoggedIn.value && showProfileForm.value)
+      syncProfileForm()
+  },
+)
+
 onShow(() => {
   if (isLoggedIn.value) {
     userStore.fetchUserInfo().catch((error) => {
       console.warn('刷新用户信息失败', error)
     })
     fetchOrders()
+    syncProfileForm()
   }
 })
 
@@ -376,6 +494,45 @@ function displayStateClass(state: string | undefined) {
         </view>
         <view class="user-tips">
           {{ tipsText }}
+        </view>
+      </view>
+    </view>
+
+    <view v-if="isLoggedIn" class="profile-edit-section card">
+      <view class="section-title">个人资料</view>
+      <view class="section-subtitle">可修改用户名、邮箱和联系电话</view>
+      <u-button class="toggle-profile-button" type="primary" plain shape="circle" :custom-style="fullWidthButtonStyle"
+        @click="toggleProfileForm">
+        {{ showProfileForm ? '收起编辑表单' : '编辑个人资料' }}
+      </u-button>
+      <view v-if="showProfileForm" class="profile-form">
+        <view class="form-item">
+          <view class="form-label">用户名</view>
+          <input v-model="profileForm.username" class="form-input" type="text" placeholder="请输入用户名"
+            @input="clearProfileError('username')" />
+          <view v-if="profileErrors.username" class="form-error">{{ profileErrors.username }}</view>
+        </view>
+        <view class="form-item">
+          <view class="form-label">邮箱</view>
+          <input v-model="profileForm.email" class="form-input" type="email" placeholder="请输入邮箱"
+            @input="clearProfileError('email')" />
+          <view v-if="profileErrors.email" class="form-error">{{ profileErrors.email }}</view>
+        </view>
+        <view class="form-item">
+          <view class="form-label">手机号</view>
+          <input v-model="profileForm.phone" class="form-input" type="tel" placeholder="请输入手机号"
+            @input="clearProfileError('phone')" />
+          <view v-if="profileErrors.phone" class="form-error">{{ profileErrors.phone }}</view>
+        </view>
+        <view class="profile-actions">
+          <u-button class="profile-cancel-button" type="primary" plain shape="circle" :disabled="profileSubmitting"
+            @click="toggleProfileForm">
+            取消
+          </u-button>
+          <u-button class="profile-submit-button" type="primary" shape="circle" :loading="profileSubmitting"
+            :disabled="profileSubmitting" @click="handleProfileSubmit">
+            保存
+          </u-button>
         </view>
       </view>
     </view>
@@ -590,6 +747,32 @@ $tabbar-gap: 180rpx;
   gap: 24rpx;
 }
 
+.profile-edit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  background: #f9fafb;
+  border-radius: 20rpx;
+  padding: 24rpx;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.profile-cancel-button,
+.profile-submit-button {
+  flex: 1;
+}
+
 .section-header {
   display: flex;
   align-items: center;
@@ -784,12 +967,30 @@ $tabbar-gap: 180rpx;
 
 .form-input {
   width: 100%;
-  padding: 22rpx 24rpx;
+  min-height: 88rpx;
   border-radius: 12rpx;
   background: #ffffff;
   border: 2rpx solid #e5e7eb;
-  font-size: 28rpx;
   box-sizing: border-box;
+}
+
+:deep(.form-input .uni-input-wrapper) {
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  display: flex;
+  align-items: center;
+}
+
+:deep(.form-input .uni-input-input) {
+  flex: 1;
+  min-height: 44rpx;
+  font-size: 28rpx;
+  line-height: 1.4;
+}
+
+:deep(.form-input .uni-input-placeholder) {
+  font-size: 28rpx;
+  color: #9ca3af;
 }
 
 .form-error {

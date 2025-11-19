@@ -78,5 +78,9 @@ export function updateUserPassword(data: UpdatePasswordPayload) {
  * 删除当前用户账号
  */
 export function deleteUserAccount(password: string) {
-  return http.delete('/user/me', { password })
+  return http<{ message: string }>({
+    url: '/user/me',
+    method: 'DELETE',
+    data: { password },
+  })
 }
