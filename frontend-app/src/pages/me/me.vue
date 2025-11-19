@@ -89,6 +89,8 @@ const deleteSubmitting = ref(false)
 const deletePassword = ref('')
 const deleteError = ref('')
 
+const passwordPattern = /^.{6,}$/
+
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^[0-9+\-]{5,20}$/
 
@@ -308,6 +310,111 @@ async function handleProfileSubmit() {
   }
 }
 
+function toggleProfileForm() {
+  if (!isLoggedIn.value) {
+    handleLogin()
+    return
+  }
+  if (showProfileForm.value) {
+    closeSettingSection(SETTINGS_SECTIONS.PROFILE)
+  }
+  else {
+    settingsCollapse.value = [...settingsCollapse.value, SETTINGS_SECTIONS.PROFILE]
+  }
+}
+
+function resetPasswordForm() {
+  passwordErrors.oldPassword = ''
+  passwordErrors.newPassword = ''
+  passwordErrors.confirmPassword = ''
+  passwordForm.oldPassword = ''
+  passwordForm.newPassword = ''
+  passwordForm.confirmPassword = ''
+}
+
+function clearPasswordError(field: PasswordField) {
+  passwordErrors[field] = ''
+}
+
+function validatePasswordForm() {
+  passwordErrors.oldPassword = ''
+  passwordErrors.newPassword = ''
+  passwordErrors.confirmPassword = ''
+  let valid = true
+
+  if (!passwordForm.oldPassword) {
+    passwordErrors.oldPassword = '请输入当前密码'
+    valid = false
+  }
+
+  if (!passwordForm.newPassword) {
+    passwordErrors.newPassword = '请输入新密码'
+    valid = false
+  }
+  else if (passwordForm.newPassword.length < 6) {
+    passwordErrors.newPassword = '密码长度不能少于6位'
+    valid = false
+  }
+
+  if (!passwordForm.confirmPassword) {
+    passwordErrors.confirmPassword = '请再次输入新密码'
+    valid = false
+  }
+  else if (passwordForm.confirmPassword !== passwordForm.newPassword) {
+    passwordErrors.confirmPassword = '两次输入的密码不一致'
+    valid = false
+  }
+
+  return valid
+}
+
+async function handlePasswordSubmit() {
+  if (!isLoggedIn.value) {
+    handleLogin()
+    return
+  }
+  if (!validatePasswordForm())
+    return
+
+  passwordSubmitting.value = true
+  try {
+    await updateUserPassword({
+      old_password: passwordForm.oldPassword,
+      new_password: passwordForm.newPassword,
+    })
+    uni.showToast({ title: '密码修改成功', icon: 'success' })
+    closeSettingSection(SETTINGS_SECTIONS.PASSWORD)
+    resetPasswordForm()
+  }
+  catch (error: any) {
+    console.error('修改密码失败', error)
+    const message = error?.data?.detail || error?.data?.msg || error?.data?.message || error?.errMsg || '修改失败，请稍后再试'
+    if (message.includes('当前密码') || message.includes('原密码') || message.includes('旧密码')) {
+      passwordErrors.oldPassword = message
+    }
+    else if (message.includes('新密码')) {
+      passwordErrors.newPassword = message
+    }
+    uni.showToast({ title: message, icon: 'none' })
+  }
+  finally {
+    passwordSubmitting.value = false
+  }
+}
+
+function togglePasswordForm() {
+  if (!isLoggedIn.value) {
+    handleLogin()
+    return
+  }
+  if (showPasswordForm.value) {
+    closeSettingSection(SETTINGS_SECTIONS.PASSWORD)
+  }
+  else {
+    settingsCollapse.value = [...settingsCollapse.value, SETTINGS_SECTIONS.PASSWORD]
+  }
+}
+
 function handleViewOrder(orderId: number) {
   uni.navigateTo({ url: `/pages/order/detail?id=${orderId}` })
 }
@@ -337,11 +444,9 @@ function handleLogout() {
         ordersLoaded.value = false
         ordersError.value = ''
         ordersLoading.value = false
-        showProfileForm.value = false
+        settingsCollapse.value = []
         resetProfileForm()
-        showPasswordForm.value = false
         resetPasswordForm()
-        showDeleteForm.value = false
         deletePassword.value = ''
         deleteError.value = ''
         uni.showToast({
@@ -353,20 +458,19 @@ function handleLogout() {
   })
 }
 
-// 切换删除账号表单
 function toggleDeleteForm() {
   if (!isLoggedIn.value) {
     handleLogin()
     return
   }
-  showDeleteForm.value = !showDeleteForm.value
-  if (!showDeleteForm.value) {
-    deletePassword.value = ''
-    deleteError.value = ''
+  if (showDeleteForm.value) {
+    closeSettingSection(SETTINGS_SECTIONS.DELETE)
+  }
+  else {
+    settingsCollapse.value = [...settingsCollapse.value, SETTINGS_SECTIONS.DELETE]
   }
 }
 
-// 删除账号
 async function handleDeleteAccount() {
   if (!isLoggedIn.value) {
     handleLogin()
@@ -397,11 +501,9 @@ async function handleDeleteAccount() {
           ordersLoaded.value = false
           ordersError.value = ''
           ordersLoading.value = false
-          showProfileForm.value = false
+          settingsCollapse.value = []
           resetProfileForm()
-          showPasswordForm.value = false
           resetPasswordForm()
-          showDeleteForm.value = false
           deletePassword.value = ''
           deleteError.value = ''
         }
@@ -433,11 +535,9 @@ watch(
       ordersLoaded.value = false
       ordersError.value = ''
       ordersLoading.value = false
-      showProfileForm.value = false
+      settingsCollapse.value = []
       resetProfileForm()
-      showPasswordForm.value = false
       resetPasswordForm()
-      showDeleteForm.value = false
       deletePassword.value = ''
       deleteError.value = ''
     }
