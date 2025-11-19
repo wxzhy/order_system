@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/order'
+
+definePage({
+  style: {
+    navigationBarTitleText: '订单详情',
+  },
+})
 
 const order = ref<Awaited<ReturnType<typeof getOrderDetail>> | null>(null)
 const loading = ref(false)
@@ -26,7 +32,6 @@ function updateCanGoBack() {
 }
 
 onLoad(async (options) => {
-  updateCanGoBack()
   if (!options?.id) {
     uni.showToast({
       title: "未找到订单",
@@ -53,6 +58,11 @@ onLoad(async (options) => {
     loading.value = false
   }
 })
+
+onShow(() => {
+  updateCanGoBack()
+})
+
 function handleGoBack() {
   const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : []
   if (Array.isArray(pages) && pages.length > 1)
