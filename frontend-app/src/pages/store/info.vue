@@ -6,9 +6,14 @@ import { getStoreDetail } from '@/api/store'
 import { getCommentList, createComment, type IComment } from '@/api/comment'
 import { LOGIN_PAGE } from '@/router/config'
 import { useTokenStore } from '@/store/token'
-import { safeAreaInsets } from '@/utils/systemInfo'
 
 defineOptions({ name: 'StoreInfo' })
+
+definePage({
+  style: {
+    navigationBarTitleText: '商家信息',
+  },
+})
 
 // 餐厅信息
 const storeInfo = ref<IStore | null>(null)
@@ -192,11 +197,6 @@ function goToOrder() {
   })
 }
 
-// 返回上一页
-function goBack() {
-  uni.navigateBack()
-}
-
 // 格式化时间
 function formatTime(time: string) {
   const date = new Date(time)
@@ -225,17 +225,6 @@ const commentCount = computed(() => commentList.value.length)
 
 <template>
   <view class="store-info-page">
-    <!-- 头部导航 -->
-    <view class="header" :style="{ paddingTop: `${(safeAreaInsets?.top || 0) + 10}px` }">
-      <view class="header-back" @tap="goBack">
-        <text class="back-icon">←</text>
-      </view>
-      <view class="header-title">
-        餐厅详情
-      </view>
-      <view class="header-placeholder" />
-    </view>
-
     <!-- 餐厅封面图 -->
     <view class="store-cover">
       <image v-if="storeInfo?.imageURL" class="cover-image" :src="storeInfo.imageURL" mode="aspectFill" />
@@ -380,49 +369,9 @@ const commentCount = computed(() => commentList.value.length)
   padding-bottom: 120rpx;
 }
 
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10rpx 30rpx 20rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
-  z-index: 100;
-}
-
-.header-back {
-  width: 80rpx;
-  height: 60rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.back-icon {
-  font-size: 40rpx;
-  font-weight: bold;
-}
-
-.header-title {
-  flex: 1;
-  text-align: center;
-  font-size: 36rpx;
-  font-weight: bold;
-}
-
-.header-placeholder {
-  width: 80rpx;
-}
-
 .store-cover {
   width: 100%;
   height: 400rpx;
-  margin-top: 88rpx;
 }
 
 .cover-image {

@@ -66,6 +66,18 @@ export const customTabbarList: CustomTabBarItem[] = [
     // badge: 'dot',
   },
   {
+    text: '订单',
+    pagePath: 'pages/order/list',
+    iconType: 'unocss',
+    icon: 'i-carbon-document',
+  },
+  {
+    text: '评论',
+    pagePath: 'pages/comment/list',
+    iconType: 'unocss',
+    icon: 'i-carbon-chat',
+  },
+  {
     pagePath: 'pages/me/me',
     text: '我的',
     // 1）在fg-tabbar.vue页面上引入一下并注释掉（见tabbar/index.vue代码第2行）

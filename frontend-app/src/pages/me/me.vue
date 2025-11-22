@@ -1,10 +1,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import dayjs from 'dayjs'
 import type { IUploadSuccessInfo, UpdateInfoPayload } from '@/api/types/login'
-import type { IOrder } from '@/api/order'
-import { getOrderList } from '@/api/order'
 import { updateUserPassword, deleteUserAccount, updateInfo } from '@/api/login'
 import { storeToRefs } from 'pinia'
 import { LOGIN_PAGE } from '@/router/config'
@@ -44,11 +41,6 @@ const idText = computed(() =>
 const emailText = computed(() => (isLoggedIn.value ? userInfo.value.email || '未填写邮箱' : '登录后可查看邮箱'))
 const phoneText = computed(() => (isLoggedIn.value ? userInfo.value.phone || '未填写手机号' : '登录后可查看手机号'))
 const tipsText = computed(() => (isLoggedIn.value ? '欢迎使用食堂餐点预约系统' : '登录后可查看订单和个人资料'))
-
-const orders = ref<IOrder[]>([])
-const ordersLoading = ref(false)
-const ordersLoaded = ref(false)
-const ordersError = ref('')
 
 const SETTINGS_SECTIONS = {
   PROFILE: 'profile',
@@ -415,10 +407,6 @@ function togglePasswordForm() {
   }
 }
 
-function handleViewOrder(orderId: number) {
-  uni.navigateTo({ url: `/pages/order/detail?id=${orderId}` })
-}
-
 function handleLogin() {
   uni.navigateTo({
     url: `${LOGIN_PAGE}?redirect=${encodeURIComponent('/pages/me/me')}`,
@@ -440,10 +428,6 @@ function handleLogout() {
     success: (res) => {
       if (res.confirm) {
         tokenStore.logout()
-        orders.value = []
-        ordersLoaded.value = false
-        ordersError.value = ''
-        ordersLoading.value = false
         settingsCollapse.value = []
         resetProfileForm()
         resetPasswordForm()
@@ -497,10 +481,6 @@ async function handleDeleteAccount() {
           uni.showToast({ title: '账号已删除', icon: 'success' })
           // 清空状态并退出登录
           tokenStore.logout()
-          orders.value = []
-          ordersLoaded.value = false
-          ordersError.value = ''
-          ordersLoading.value = false
           settingsCollapse.value = []
           resetProfileForm()
           resetPasswordForm()
@@ -527,14 +507,9 @@ watch(
       userStore.fetchUserInfo().catch((error) => {
         console.warn('刷新用户信息失败', error)
       })
-      fetchOrders()
       syncProfileForm()
     }
     else {
-      orders.value = []
-      ordersLoaded.value = false
-      ordersError.value = ''
-      ordersLoading.value = false
       settingsCollapse.value = []
       resetProfileForm()
       resetPasswordForm()
@@ -558,18 +533,9 @@ onShow(() => {
     userStore.fetchUserInfo().catch((error) => {
       console.warn('刷新用户信息失败', error)
     })
-    fetchOrders()
     syncProfileForm()
   }
 })
-
-function displayStateText(state: string | undefined) {
-  return resolveOrderStatus(state).text
-}
-
-function displayStateClass(state: string | undefined) {
-  return `status-${resolveOrderStatus(state).tagClass}`
-}
 </script>
 
 <template>
@@ -633,40 +599,6 @@ function displayStateClass(state: string | undefined) {
             :disabled="profileSubmitting" @click="handleProfileSubmit">
             保存
           </u-button>
-        </view>
-      </view>
-    </view>
-
-    <view v-if="isLoggedIn" class="orders-section card">
-      <view class="section-header">
-        <view class="section-title">我的订单</view>
-        <view class="section-actions">
-          <u-button class="refresh-button" type="primary" plain shape="circle" size="mini" :loading="ordersLoading"
-            :disabled="ordersLoading" @click="fetchOrders(true)">
-            刷新
-          </u-button>
-        </view>
-      </view>
-      <view v-if="ordersLoading && !ordersLoaded" class="orders-placeholder">正在加载订单...</view>
-      <view v-else-if="ordersError" class="orders-error">{{ ordersError }}</view>
-      <view v-else-if="!orders.length" class="orders-placeholder">暂无订单记录</view>
-      <view v-else class="order-list">
-        <view v-for="(order, index) in orders" :key="order.id"
-          :class="['order-item', { 'order-item--last': index === orders.length - 1 }]">
-          <view class="order-header">
-            <view class="order-title">{{ order.store_name || '餐厅订单' }}</view>
-            <view class="order-status">
-              <text :class="['status-tag', displayStateClass(order.state)]">{{ displayStateText(order.state) }}</text>
-            </view>
-          </view>
-          <view class="order-meta">订单编号：{{ order.id }}</view>
-          <view class="order-meta">下单时间：{{ formatDateTime(order.create_time) }}</view>
-          <view class="order-meta">订单金额：￥{{ formatAmount(order) }}</view>
-          <view class="order-actions">
-            <u-button class="order-button" type="primary" size="mini" shape="circle" @click="handleViewOrder(order.id)">
-              查看详情
-            </u-button>
-          </view>
         </view>
       </view>
     </view>
@@ -841,12 +773,6 @@ $tabbar-gap: 180rpx;
   gap: 8rpx;
 }
 
-.orders-section {
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
-}
-
 .profile-edit-section {
   display: flex;
   flex-direction: column;
@@ -896,97 +822,6 @@ $tabbar-gap: 180rpx;
   font-size: 26rpx;
   color: #6b7280;
   margin-top: 8rpx;
-}
-
-.refresh-button {
-  min-width: 160rpx;
-}
-
-.orders-placeholder {
-  font-size: 26rpx;
-  color: #6b7280;
-}
-
-.orders-error {
-  font-size: 26rpx;
-  color: #ef4444;
-}
-
-.order-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
-}
-
-.order-item {
-  padding: 24rpx;
-  border-radius: 20rpx;
-  background: #f9fafb;
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-}
-
-.order-item--last {
-  margin-bottom: 0;
-}
-
-.order-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-}
-
-.order-title {
-  font-size: 30rpx;
-  font-weight: 600;
-  color: #111827;
-}
-
-.order-meta {
-  font-size: 26rpx;
-  color: #4b5563;
-}
-
-.order-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12rpx;
-}
-
-.order-button {
-  min-width: 180rpx;
-}
-
-.status-tag {
-  padding: 8rpx 20rpx;
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 500;
-  background: #f3f4f6;
-  color: #4b5563;
-}
-
-.status-pending {
-  background: #fff7ed;
-  color: #d97706;
-}
-
-.status-approved,
-.status-completed {
-  background: #ecfdf5;
-  color: #047857;
-}
-
-.status-cancelled {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.status-default {
-  background: #e5e7eb;
-  color: #4b5563;
 }
 
 .password-section {

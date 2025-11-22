@@ -228,7 +228,7 @@ function goBack() {
       <view class="header-back" @tap="goBack">
         <text class="back-icon">←</text>
       </view>
-      <view class="header-title">{{ storeInfo?.storeName || '餐厅详情' }}</view>
+      <view class="header-title">店铺详情</view>
       <view class="header-placeholder" />
     </view>
 

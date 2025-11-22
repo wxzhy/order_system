@@ -55,3 +55,13 @@ export function createComment(data: ICommentCreate) {
     data,
   })
 }
+
+/**
+ * 删除评论
+ */
+export function deleteComment(id: number) {
+  return http<{ message: string }>({
+    url: `/comment/${id}`,
+    method: 'DELETE',
+  })
+}
