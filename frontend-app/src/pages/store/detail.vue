@@ -7,6 +7,12 @@ import type { IStore } from '@/api/store'
 import { LOGIN_PAGE } from '@/router/config'
 import { useTokenStore } from '@/store/token'
 
+definePage({
+  style: {
+    navigationBarTitleText: '店铺详情',
+  },
+})
+
 // 餐厅信息
 const storeInfo = ref<IStore | null>(null)
 const storeId = ref<number>(0)
@@ -214,24 +220,10 @@ function goToCheckout() {
     url: '/pages/order/checkout',
   })
 }
-
-// 返回上一页
-function goBack() {
-  uni.navigateBack()
-}
 </script>
 
 <template>
   <view class="store-detail-page">
-    <!-- 头部导航 -->
-    <view class="header">
-      <view class="header-back" @tap="goBack">
-        <text class="back-icon">←</text>
-      </view>
-      <view class="header-title">店铺详情</view>
-      <view class="header-placeholder" />
-    </view>
-
     <!-- 餐厅信息 -->
     <view v-if="storeInfo" class="store-info">
       <image v-if="storeInfo.imageURL" class="store-image" :src="storeInfo.imageURL" mode="aspectFill" />

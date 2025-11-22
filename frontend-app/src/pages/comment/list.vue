@@ -172,7 +172,7 @@ onShow(() => {
                         <view class="card-body">
                             <view class="comment-content">{{ comment.content }}</view>
                             <view class="comment-meta">
-                                <text class="meta-label">发布时间：</text>
+                                <text class="meta-label">提交时间：</text>
                                 <text class="meta-value">{{ formatDateTime(comment.publish_time) }}</text>
                             </view>
                             <view v-if="comment.review_time" class="comment-meta">
@@ -231,6 +231,7 @@ $tabbar-gap: 180rpx;
 .scroll-container {
     height: 100%;
     padding: 32rpx;
+    box-sizing: border-box;
 }
 
 .loading-state {

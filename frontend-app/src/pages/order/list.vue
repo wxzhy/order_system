@@ -156,8 +156,12 @@ onShow(() => {
                                 <text class="info-value">{{ order.id }}</text>
                             </view>
                             <view class="order-info">
-                                <text class="info-label">下单时间：</text>
+                                <text class="info-label">提交时间：</text>
                                 <text class="info-value">{{ formatDateTime(order.create_time) }}</text>
+                            </view>
+                            <view v-if="order.review_time" class="order-info">
+                                <text class="info-label">审核时间：</text>
+                                <text class="info-value">{{ formatDateTime(order.review_time) }}</text>
                             </view>
                             <view class="order-info">
                                 <text class="info-label">订单金额：</text>
@@ -214,6 +218,7 @@ $tabbar-gap: 180rpx;
 .scroll-container {
     height: 100%;
     padding: 32rpx;
+    box-sizing: border-box;
 }
 
 .loading-state {

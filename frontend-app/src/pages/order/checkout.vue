@@ -3,6 +3,12 @@ import { reactive, ref } from "vue"
 import { onLoad } from "@dcloudio/uni-app"
 import { createOrder, type IOrderItemCreate } from "@/api/order"
 
+definePage({
+  style: {
+    navigationBarTitleText: '确认订单',
+  },
+})
+
 interface PendingOrderItem {
   id: number
   itemName: string
