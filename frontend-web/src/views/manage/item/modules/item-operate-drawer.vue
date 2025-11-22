@@ -87,7 +87,6 @@ async function handleSubmit() {
         quantity: model.quantity,
         store_id: model.store_id
       });
-      window.$message?.success('添加成功');
     } else if (props.rowData) {
       await updateItem(props.rowData.id, {
         itemName: model.itemName,
@@ -97,9 +96,9 @@ async function handleSubmit() {
         quantity: model.quantity,
         store_id: model.store_id
       });
-      window.$message?.success('更新成功');
     }
 
+    window.$message?.success(props.operateType === 'add' ? '添加成功' : '更新成功');
     closeDrawer();
     emit('submitted');
   } catch (error: any) {

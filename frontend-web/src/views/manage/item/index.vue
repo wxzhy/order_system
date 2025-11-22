@@ -147,7 +147,6 @@ async function handleBatchDelete() {
 async function handleDelete(id: number) {
     try {
         await deleteItem(id);
-        window.$message?.success('删除成功');
         onDeleted();
     } catch (error: any) {
         window.$message?.error(error?.message || '删除失败');

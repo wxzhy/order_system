@@ -474,6 +474,7 @@ const commentCount = computed(() => commentList.value.length)
   margin: 0 20rpx 20rpx;
   border-radius: 24rpx;
   padding: 30rpx;
+  box-sizing: border-box;
 }
 
 .intro-section {
