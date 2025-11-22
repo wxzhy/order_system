@@ -837,9 +837,3 @@ function goBack() {
   gap: 16rpx;
 }
 </style>
-
-
-
-
-
-
