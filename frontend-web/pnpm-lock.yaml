@@ -141,6 +141,9 @@ importers:
       '@amap/amap-jsapi-types':
         specifier: 0.0.15
         version: 0.0.15
+      '@babel/parser':
+        specifier: ^7.28.5
+        version: 7.28.5
       '@elegant-router/vue':
         specifier: 0.3.8
         version: 0.3.8

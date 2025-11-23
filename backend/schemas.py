@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel, EmailStr, Field
-from backend.models import (
+from models import (
     UserType,
     StoreState,
     OrderState,

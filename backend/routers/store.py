@@ -4,9 +4,9 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentVendor
-from backend.models import Store, StoreState, UserType, User
-from backend.schemas import (
+from dependencies import SessionDep, CurrentUser, CurrentAdmin, CurrentVendor
+from models import Store, StoreState, UserType, User
+from schemas import (
     StoreCreate,
     StoreUpdate,
     StoreResponse,

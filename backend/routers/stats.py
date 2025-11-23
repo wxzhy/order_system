@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from fastapi import APIRouter
 
-from backend.dependencies import SessionDep, CurrentUser
-from backend.models import (
+from dependencies import SessionDep, CurrentUser
+from models import (
     Comment,
     CommentState,
     Item,
@@ -17,7 +17,7 @@ from backend.models import (
     User,
     UserType,
 )
-from backend.schemas import (
+from schemas import (
     AdminPersonalStats,
     CustomerPersonalStats,
     PersonalStatsResponse,

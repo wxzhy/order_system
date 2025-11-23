@@ -74,7 +74,7 @@ def check_database_config():
         return False
     else:
         print("⚠️  未找到配置文件")
-        print("   请在 backend/database.py 中配置数据库连接")
+        print("   请在 database.py 中配置数据库连接")
         return True  # 继续执行，使用默认配置
 
 
@@ -113,7 +113,7 @@ def start_server():
                 sys.executable,
                 "-m",
                 "uvicorn",
-                "backend.main:app",
+                "main:app",
                 "--reload",
                 "--host",
                 "0.0.0.0",

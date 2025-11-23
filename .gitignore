@@ -359,3 +359,4 @@ vite.config.ts.timestamp-*
 
 .playwright-mcp/
 resources
+*.zip

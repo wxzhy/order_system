@@ -3,9 +3,9 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
-from backend.dependencies import SessionDep, CurrentUser, CurrentAdmin
-from backend.models import User
-from backend.schemas import (
+from dependencies import SessionDep, CurrentUser, CurrentAdmin
+from models import User
+from schemas import (
     UserResponse,
     AdminUserCreate,
     UserUpdate,
@@ -16,7 +16,7 @@ from backend.schemas import (
     BatchDeleteRequest,
     BatchDeleteResponse,
 )
-from backend.security import verify_password, get_password_hash
+from security import verify_password, get_password_hash
 
 router = APIRouter(prefix="/user", tags=["用户管理"])
 

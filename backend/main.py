@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import traceback
 
-from backend.database import lifespan
-from backend.routers import auth, user, store, item, order, comment, stats
+from database import lifespan
+from routers import auth, user, store, item, order, comment, stats
 
 app = FastAPI(
     title="食堂餐点预定系统",
@@ -69,4 +69,4 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

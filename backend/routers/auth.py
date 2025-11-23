@@ -10,9 +10,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.dependencies import CurrentUser, SessionDep
-from backend.models import EmailVerificationCode, User, VerificationScene
-from backend.schemas import (
+from dependencies import CurrentUser, SessionDep
+from models import EmailVerificationCode, User, VerificationScene
+from schemas import (
     EmailCodeSendRequest,
     EmailLoginRequest,
     LoginRequest,
@@ -24,7 +24,7 @@ from backend.schemas import (
     UserResponse,
     UserUpdate,
 )
-from backend.security import (
+from security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
     SECRET_KEY,
@@ -33,7 +33,7 @@ from backend.security import (
     get_password_hash,
     verify_password,
 )
-from backend.utils.email import send_email
+from utils.email import send_email
 
 # table ref for typed column access
 EmailVerificationTable: Any = getattr(EmailVerificationCode, "__table__", None)
