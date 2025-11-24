@@ -2,7 +2,7 @@ import { alova } from '../request';
 
 /** get user list */
 export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
-  return alova.Get<Api.SystemManage.UserList>('/user', {
+  return alova.Get<Api.SystemManage.UserList>('/user/', {
     params,
     cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
   });
@@ -18,7 +18,7 @@ export type UserModel = {
 
 /** add user - 管理员功能 (需要单独实现) */
 export function addUser(data: UserModel) {
-  return alova.Post<Api.Auth.UserInfo>('/user', data);
+  return alova.Post<Api.Auth.UserInfo>('/user/', data);
 }
 
 /** update user */

@@ -3,7 +3,7 @@ import { alova } from '../request';
 /**
 /** get item list */
 export function fetchGetItemList(params?: ItemSearchParams) {
-    return alova.Get<Api.SystemManage.ItemList>('/item', {
+    return alova.Get<Api.SystemManage.ItemList>('/item/', {
         params,
         cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
     });
@@ -15,7 +15,7 @@ export function fetchGetItemList(params?: ItemSearchParams) {
  * @param data - 餐点数据
  */
 export function addItem(data: Api.SystemManage.ItemEdit) {
-    return alova.Post<Api.SystemManage.Item>('/item', data);
+    return alova.Post<Api.SystemManage.Item>('/item/', data);
 }
 
 /**

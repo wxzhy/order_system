@@ -6,7 +6,7 @@ import { alova } from '../request';
  * @param params - 搜索参数
  */
 export function fetchGetOrderList(params?: Api.SystemManage.OrderSearchParams) {
-    return alova.Get<Api.SystemManage.OrderList>('/order', {
+    return alova.Get<Api.SystemManage.OrderList>('/order/', {
         params,
         cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
     });

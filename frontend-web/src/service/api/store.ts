@@ -29,7 +29,7 @@ export type VendorStoreStatus = {
 
 /** get store list */
 export function fetchGetStoreList(params?: StoreSearchParams) {
-    return alova.Get<Api.SystemManage.StoreList>('/store', {
+    return alova.Get<Api.SystemManage.StoreList>('/store/', {
         params,
         cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
     });
@@ -37,7 +37,7 @@ export function fetchGetStoreList(params?: StoreSearchParams) {
 
 /** add store - 管理员功能 */
 export function addStore(data: StoreModel) {
-    return alova.Post<Api.SystemManage.Store>('/store', data);
+    return alova.Post<Api.SystemManage.Store>('/store/', data);
 }
 
 export function fetchMyStore() {

@@ -3,7 +3,7 @@ import { alova } from '../request';
 /**
 /** get comment list */
 export function fetchGetCommentList(params?: CommentSearchParams) {
-    return alova.Get<Api.SystemManage.CommentList>('/comment', {
+    return alova.Get<Api.SystemManage.CommentList>('/comment/', {
         params,
         cacheFor: 0 // 禁用缓存，确保刷新按钮能够获取最新数据
     });
