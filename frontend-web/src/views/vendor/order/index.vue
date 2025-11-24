@@ -1,12 +1,13 @@
 <script setup lang="tsx">
 import { computed, reactive, ref, watch, watchEffect } from 'vue';
-import { ElButton, ElCard, ElResult, ElSkeleton, ElTable, ElTableColumn } from 'element-plus';
+import { ElButton, ElCard, ElResult, ElSkeleton, ElTable, ElTableColumn, ElTag } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { fetchGetOrderList, updateOrder } from '@/service/api';
-import { useUIPaginatedTable } from '@/hooks/common/table';
+import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { useVendorStoreStatus } from '@/hooks/business/vendor-store';
 import { $t } from '@/locales';
 import OrderApprovalSearch from './modules/order-approval-search.vue';
+import OrderOperateDrawer from './modules/order-operate-drawer.vue';
 
 defineOptions({ name: 'OrderApprovalManage' });
 
@@ -16,9 +17,9 @@ function getInitSearchParams() {
   return {
     skip: 0,
     limit: 30,
-    state: 'pending' as const,
+    state: undefined as Api.SystemManage.OrderState | undefined,
     user_name: undefined,
-    store_id: undefined,
+    store_id: undefined as number | undefined,
     user_id: undefined
   };
 }
@@ -45,6 +46,63 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     currentPage: 1,
     pageSize: 30
   },
+  columns: () => [
+    { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
+    { prop: 'user_name', label: '用户', width: 120 },
+    {
+      prop: 'total_amount',
+      label: '订单金额',
+      width: 120,
+      align: 'center',
+      formatter: (row: Api.SystemManage.Order) => {
+        if (row.total_amount !== undefined) {
+          return `￥${row.total_amount.toFixed(2)}`;
+        }
+        return '-';
+      }
+    },
+    {
+      prop: 'state',
+      label: '订单状态',
+      width: 120,
+      align: 'center',
+      formatter: (row: Api.SystemManage.Order) => {
+        const stateMap: Record<string, { label: string; type: 'success' | 'warning' | 'info' | 'danger' }> = {
+          pending: { label: '待审核', type: 'warning' },
+          approved: { label: '已同意', type: 'info' },
+          completed: { label: '已完成', type: 'success' },
+          cancelled: { label: '已取消', type: 'danger' }
+        };
+        const state = stateMap[row.state] || { label: row.state, type: 'info' };
+        return <ElTag type={state.type}>{state.label}</ElTag>;
+      }
+    },
+    { prop: 'create_time', label: '创建时间', width: 180 },
+    {
+      prop: 'actions',
+      label: $t('common.action'),
+      width: 280,
+      fixed: 'right',
+      align: 'center',
+      formatter: (row: Api.SystemManage.Order) => (
+        <div class="flex-center gap-8px">
+          <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
+            详情
+          </ElButton>
+          {row.state === 'pending' && (
+            <>
+              <ElButton type="success" plain size="small" onClick={() => handleApprove(row.id, 'approved')}>
+                审批通过
+              </ElButton>
+              <ElButton type="warning" plain size="small" onClick={() => handleApprove(row.id, 'cancelled')}>
+                拒绝订单
+              </ElButton>
+            </>
+          )}
+        </div>
+      )
+    }
+  ],
   api: async () => {
     if (!storeId.value || !canManage.value) {
       return createEmptyList();
@@ -74,42 +132,10 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
     const pageSize = params.pageSize ?? 30;
     searchParams.skip = (currentPage - 1) * pageSize;
     searchParams.limit = pageSize;
-  },
-  columns: () => [
-    { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
-    { prop: 'user_name', label: '用户', width: 120 },
-    {
-      prop: 'total_amount',
-      label: '订单金额',
-      width: 120,
-      align: 'center',
-      formatter: (row: Api.SystemManage.Order) => {
-        if (row.total_amount !== undefined) {
-          return `￥${row.total_amount.toFixed(2)}`;
-        }
-        return '-';
-      }
-    },
-    { prop: 'create_time', label: '创建时间', width: 180 },
-    {
-      prop: 'actions',
-      label: $t('common.action'),
-      width: 200,
-      fixed: 'right',
-      align: 'center',
-      formatter: (row: Api.SystemManage.Order) => (
-        <div class="flex-center gap-8px">
-          <ElButton type="success" plain size="small" onClick={() => handleApprove(row.id, 'approved')}>
-            审批通过
-          </ElButton>
-          <ElButton type="warning" plain size="small" onClick={() => handleApprove(row.id, 'cancelled')}>
-            拒绝订单
-          </ElButton>
-        </div>
-      )
-    }
-  ]
+  }
 });
+
+const { drawerVisible, operateType, handleEdit, editingData } = useTableOperate(data, 'id', getData);
 
 watch(
   () => (canManage.value && storeId.value ? storeId.value : null),
@@ -180,12 +206,7 @@ watchEffect(() => {
     <ElSkeleton v-if="statusLoading" animated :rows="6" />
 
     <template v-else>
-      <ElResult
-        v-if="!canManage"
-        icon="info"
-        title="暂无法审批订单"
-        :sub-title="blockMessage"
-      >
+      <ElResult v-if="!canManage" icon="info" title="暂无法审批订单" :sub-title="blockMessage">
         <template #extra>
           <RouterLink to="/vendor/register">
             <ElButton type="primary">前往商家注册</ElButton>
@@ -200,7 +221,7 @@ watchEffect(() => {
         <ElCard class="card-wrapper sm:flex-1-hidden" body-class="ht50">
           <template #header>
             <div class="flex items-center justify-between">
-              <p>待审批订单</p>
+              <p>订单列表</p>
               <TableHeaderOperation v-model:columns="columnChecks" :loading="loading" @refresh="getData">
                 <template #default><span></span></template>
               </TableHeaderOperation>
@@ -212,17 +233,15 @@ watchEffect(() => {
             </ElTable>
           </div>
           <div class="mt-20px flex justify-end">
-            <ElPagination
-              v-if="mobilePagination.total"
-              layout="total,prev,pager,next,sizes"
-              v-bind="mobilePagination"
-              @current-change="mobilePagination['current-change']"
-              @size-change="mobilePagination['size-change']"
-            />
+            <ElPagination v-if="mobilePagination.total" layout="total,prev,pager,next,sizes" v-bind="mobilePagination"
+              @current-change="mobilePagination['current-change']" @size-change="mobilePagination['size-change']" />
           </div>
         </ElCard>
       </template>
     </template>
+
+    <OrderOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData"
+      @submitted="getDataByPage" />
   </div>
 </template>
 
@@ -233,5 +252,3 @@ watchEffect(() => {
   }
 }
 </style>
-
-

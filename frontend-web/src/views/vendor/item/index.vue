@@ -53,7 +53,73 @@ const {
     currentPage: 1,
     pageSize: 30
   },
-  columns: () => [],
+  columns: () => [
+    { prop: 'selection', type: 'selection', width: 48 },
+    { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
+    {
+      prop: 'imageURL',
+      label: '图片',
+      width: 100,
+      align: 'center',
+      formatter: (row: Api.SystemManage.Item) => {
+        if (row.imageURL) {
+          return (
+            <ElImage
+              src={row.imageURL}
+              preview-src-list={[row.imageURL]}
+              fit="cover"
+              style="width: 60px; height: 60px; border-radius: 4px;"
+            />
+          );
+        }
+        return <span class="text-#ccc">暂无图片</span>;
+      }
+    },
+    { prop: 'itemName', label: '餐点名称', minWidth: 150 },
+    { prop: 'description', label: '描述', minWidth: 200 },
+    {
+      prop: 'price',
+      label: '价格',
+      width: 100,
+      align: 'center',
+      formatter: (row: Api.SystemManage.Item) => `￥${row.price.toFixed(2)}`
+    },
+    {
+      prop: 'quantity',
+      label: '库存',
+      width: 100,
+      align: 'center',
+      formatter: (row: Api.SystemManage.Item) => {
+        if (row.quantity > 0) {
+          return <ElTag type="success">{row.quantity}</ElTag>;
+        }
+        return <ElTag type="danger">缺货</ElTag>;
+      }
+    },
+    {
+      prop: 'actions',
+      label: $t('common.action'),
+      width: 200,
+      fixed: 'right',
+      align: 'center',
+      formatter: (row: Api.SystemManage.Item) => (
+        <div class="flex-center gap-8px">
+          <ElButton type="primary" plain size="small" onClick={() => handleEdit(row)}>
+            {$t('common.edit')}
+          </ElButton>
+          <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
+            {{
+              reference: () => (
+                <ElButton type="danger" plain size="small">
+                  {$t('common.delete')}
+                </ElButton>
+              )
+            }}
+          </ElPopconfirm>
+        </div>
+      )
+    }
+  ],
   api: async () => {
     if (!storeId.value || !canManage.value) {
       return createEmptyList();
@@ -83,8 +149,7 @@ const {
     const pageSize = params.pageSize ?? 30;
     searchParams.skip = (currentPage - 1) * pageSize;
     searchParams.limit = pageSize;
-  },
-  immediatelyColumns: false
+  }
 });
 
 const { drawerVisible, operateType, handleAdd, handleEdit, onBatchDeleted, onDeleted, editingData } = useTableOperate(
@@ -92,74 +157,6 @@ const { drawerVisible, operateType, handleAdd, handleEdit, onBatchDeleted, onDel
   'id',
   getData
 );
-
-columns.value = [
-  { prop: 'selection', type: 'selection', width: 48 },
-  { prop: 'index', type: 'index', label: $t('common.index'), width: 64 },
-  {
-    prop: 'imageURL',
-    label: '图片',
-    width: 100,
-    align: 'center',
-    formatter: (row: Api.SystemManage.Item) => {
-      if (row.imageURL) {
-        return (
-          <ElImage
-            src={row.imageURL}
-            preview-src-list={[row.imageURL]}
-            fit="cover"
-            style="width: 60px; height: 60px; border-radius: 4px;"
-          />
-        );
-      }
-      return <span class="text-#ccc">暂无图片</span>;
-    }
-  },
-  { prop: 'itemName', label: '餐点名称', minWidth: 150 },
-  { prop: 'description', label: '描述', minWidth: 200 },
-  {
-    prop: 'price',
-    label: '价格',
-    width: 100,
-    align: 'center',
-    formatter: (row: Api.SystemManage.Item) => `￥${row.price.toFixed(2)}`
-  },
-  {
-    prop: 'quantity',
-    label: '库存',
-    width: 100,
-    align: 'center',
-    formatter: (row: Api.SystemManage.Item) => {
-      if (row.quantity > 0) {
-        return <ElTag type="success">{row.quantity}</ElTag>;
-      }
-      return <ElTag type="danger">缺货</ElTag>;
-    }
-  },
-  {
-    prop: 'actions',
-    label: $t('common.action'),
-    width: 200,
-    fixed: 'right',
-    align: 'center',
-    formatter: (row: Api.SystemManage.Item) => (
-      <div class="flex-center gap-8px">
-        <ElButton type="primary" plain size="small" onClick={() => handleEdit(row)}>
-          {$t('common.edit')}
-        </ElButton>
-        <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
-          {{
-            reference: () => (
-              <ElButton type="danger" plain size="small">
-                {$t('common.delete')}
-              </ElButton>
-            )
-          }}
-        </ElPopconfirm>
-      </div>
-    )
-  }
-];
 
 const checkedRowKeys = ref<number[]>([]);
 
