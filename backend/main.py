@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import traceback
 
-from database import lifespan
-from routers import auth, user, store, item, order, comment, stats
+from .database import lifespan
+from .routers import auth, user, store, item, order, comment, stats
 
 app = FastAPI(
     title="食堂餐点预定系统",

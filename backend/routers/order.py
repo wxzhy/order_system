@@ -5,13 +5,13 @@ from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from dependencies import (
+from ..dependencies import (
     SessionDep,
     CurrentUser,
     CurrentVendor,
     CurrentCustomer,
 )
-from models import (
+from ..models import (
     Order,
     OrderItem,
     Item,
@@ -21,7 +21,7 @@ from models import (
     User,
     StoreState,
 )
-from schemas import (
+from ..schemas import (
     OrderCreate,
     OrderUpdate,
     OrderResponse,

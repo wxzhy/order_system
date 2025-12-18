@@ -1,7 +1,7 @@
 from email.message import EmailMessage
 import smtplib
 
-from config import get_config
+from ..config import get_config
 
 # 从配置文件读取SMTP配置
 config = get_config()

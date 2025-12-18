@@ -5,9 +5,9 @@
 import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlmodel import select
-from database import get_engine
-from models import User, UserType
-from security import get_password_hash
+from .database import get_engine
+from .models import User, UserType
+from .security import get_password_hash
 
 
 async def create_default_admin():

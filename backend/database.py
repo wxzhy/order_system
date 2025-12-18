@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from fastapi import FastAPI
 import urllib.parse
 
-from config import get_config
+from .config import get_config
 
 # 从配置文件读取数据库配置
 config = get_config()
